@@ -73,4 +73,27 @@ Outdoor-first: high contrast, legible type, minimum platform touch target, visib
 
 ## Pattern candidates
 
-Component Pattern, Repository Pattern, Service/Adapter Pattern. They become report evidence only if implementation contains genuine examples; do not force abstractions.
+### Framework-pattern candidates for rubric evidence
+
+The final three framework-related patterns used in the report will only be
+selected once genuine examples exist in the implementation.
+
+Initial candidates:
+
+- Component Composition
+- Custom Hooks / reusable application logic
+- Provider/Context Pattern or another genuinely implemented React pattern
+
+Do not force a pattern solely to satisfy the report.
+
+### Application architecture patterns
+
+The application architecture intentionally uses:
+
+- Repository Pattern through `SightingsRepository`
+- Service/Adapter-style boundaries through `WeatherService`,
+  `LocationService`, and `PhotoService`
+
+These may be discussed as architectural decisions, but they should not
+automatically replace the requirement to identify patterns present in the
+selected framework.
