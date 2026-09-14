@@ -28,6 +28,12 @@
       "expo-sqlite",
       "expo-asset",
       "expo-dev-client"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "29a6850f-2d28-4e7e-8e02-034f473dd19f"
+      }
+    }
   }
 }
