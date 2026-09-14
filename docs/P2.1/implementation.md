@@ -1,90 +1,55 @@
-# P2.1 Implementation
+# P2.1 Implementation and Closure
 
-## Development client
+## Development client and package identity
 
-Installed with the Expo-recommended command:
+Installed `expo-dev-client` for Expo SDK 57. The project uses Android package `com.wuanpack.avistaves`.
 
-```bash
-npx expo install expo-dev-client
-```
+`yarn start` targets the custom client through `expo start --dev-client`; Expo Go is not part of the documented Android workflow.
 
-Resolved version: `~57.0.19`. `expo-dev-client` is included in `app.json` plugins. The Android development workflow no longer targets Expo Go; `start` uses `expo start --dev-client`.
+## EAS profiles and local builds
 
-## Android identity
-
-`app.json` now defines:
-
-```json
-{
-  "android": {
-    "package": "com.wuanpack.avistaves"
-  }
-}
-```
-
-This stable application ID is required for deterministic Android development/preview artifacts. No credentials or signing configuration was added.
-
-## EAS configuration
-
-`eas.json` uses EAS CLI `24.3.0` or newer:
+`eas.json` defines:
 
 - `development`: `developmentClient: true`, `distribution: internal`, Android APK.
 - `preview`: `distribution: internal`, Android APK.
-- No production profile was added.
 
-The repository remains managed workflow. No `android/` directory or `eas init` project link was generated.
-
-## Package scripts
+Scripts create deterministic output paths:
 
 ```json
 {
-  "start": "expo start --dev-client",
   "build:dev": "mkdir -p build-outputs/development && npx eas-cli build --platform android --profile development --local --output build-outputs/development/avistaves-development.apk",
   "build:preview": "mkdir -p build-outputs/preview && npx eas-cli build --platform android --profile preview --local --output build-outputs/preview/avistaves-preview.apk"
 }
 ```
 
-Each build script creates its output directory before invoking EAS. `--output` receives a file path, matching EAS CLI 24.3.0 help. Commands are Linux-compatible and intended for manual execution with Yarn or npm script forwarding.
+The EAS project is now linked to account `wuanpack`. Local compilation uses local build tooling and remote Android credentials. No production profile, Play Store upload, or release signing workflow was added.
 
-Expected manual outputs:
+## Dependency and environment cleanup
 
-```text
-build-outputs/development/avistaves-development.apk
-build-outputs/preview/avistaves-preview.apk
-```
+- Yarn Classic `1.22.22` is package-manager baseline.
+- Mixed-lockfile issues were corrected.
+- Local EAS CLI issues were corrected.
+- Node 22 and Java 17 were used where verified.
+- `expo-doctor` completed 21/21 checks after dependency alignment.
+
+## Build troubleshooting evidence
+
+An initial local build ran under `/tmp` and failed with `No space left on device` during Kotlin/CMake/D8/Gradle output. This was a constrained Fedora tmpfs storage failure, not an application or EAS profile failure.
+
+A later local build used adequate non-constrained storage and completed successfully. The development APK was generated and opened on a physical Android phone. `yarn start` then started Metro in development-client mode and the installed AvistAves development client opened successfully.
+
+React Native DevTools displayed a Chromium SUID sandbox error under Flatpak VSCodium. Metro and application operation were unaffected.
 
 ## Git hygiene
 
-`.gitignore` now excludes:
+`build-outputs/`, `*.apk`, and `*.aab` remain ignored. No generated build output is part of source documentation. No Web configuration or Web validation was added for P2.1.
 
-- `build-outputs/`
-- `*.apk`
-- `*.aab`
-
-`eas.json`, source, and documentation remain trackable.
-
-## Manual workflow
-
-First development build:
+## Manual workflow now available
 
 ```bash
 yarn build:dev
-```
-
-Install resulting APK manually on Android emulator/device. Daily development:
-
-```bash
 yarn start
-```
-
-Then open installed development client. Preview validation:
-
-```bash
 yarn build:preview
 ```
 
-Preview APK is standalone and does not depend on Metro or Expo Go.
-
-## Explicit non-actions
-
-No build was executed during P2.1. No `eas build`, `eas build --local`, `yarn build:dev`, `yarn build:preview`, `npx expo run:android`, Gradle build, prebuild, browser launch, or Web validation was performed.
+The user owns future build execution and artifact inspection. P2.1 closure did not execute another build.

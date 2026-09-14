@@ -3,10 +3,10 @@ import '../global.css';
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: 'AvistAves' }} />
-      <Stack.Screen name="sightings/new" options={{ title: 'Nuevo avistamiento' }} />
-      <Stack.Screen name="sightings/[id]" options={{ title: 'Detalle' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="sightings/new" />
+      <Stack.Screen name="sightings/[id]" />
     </Stack>
   );
 }
