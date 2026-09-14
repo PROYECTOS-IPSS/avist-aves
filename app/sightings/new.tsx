@@ -10,6 +10,7 @@ import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { CameraCapture } from '../../src/components/CameraCapture';
 import { deleteOwnedDraftPhoto, persistCapturedPhoto } from '../../src/services/photoService';
+import { LocationCapture } from '../../src/components/LocationCapture';
 import { useSightingForm } from '../../src/hooks/useSightingForm';
 
 const inputClassName = 'min-h-14 rounded-2xl border border-field-line bg-field-white px-4 text-base text-field-ink';
@@ -26,13 +27,18 @@ export default function NewSightingScreen() {
     setCameraOpen(false);
     if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
   }
+  function handleLocated({ coordinates, locationLabel }: { coordinates: { latitude: number; longitude: number }; locationLabel: string }) {
+    setField('latitude', coordinates.latitude);
+    setField('longitude', coordinates.longitude);
+    setField('locationLabel', locationLabel);
+  }
 
   return (
     <AppScreen>
       <AppHeader
         eyebrow="Nueva ficha / Registro"
         title="Nuevo avistamiento"
-        subtitle="Completa lo que sabes ahora. La foto se toma dentro de AvistAves; la ubicación llegará después."
+        subtitle="Completa lo que sabes ahora. La foto y ubicación quedan en el borrador; clima y guardado final llegarán después."
         onBack={() => router.back()}
       />
 
@@ -46,9 +52,13 @@ export default function NewSightingScreen() {
       <View className="h-3" />
       <FoundationCard
         label="Ubicación · requerida"
-        title="Pendiente de GPS"
-        description="La ubicación se obtendrá automáticamente; no se editará a mano."
-        mark="⌖"
+        title={draft.latitude !== null && draft.longitude !== null ? 'Ubicación lista' : 'Pendiente de GPS'}
+        description={
+          draft.latitude !== null && draft.longitude !== null
+            ? draft.locationLabel || 'Coordenadas obtenidas; nombre de lugar no disponible.'
+            : 'La ubicación se obtendrá automáticamente; no se puede editar a mano.'
+        }
+        mark={draft.latitude !== null && draft.longitude !== null ? '✓' : '⌖'}
         tone="sky"
       />
 
@@ -79,6 +89,12 @@ export default function NewSightingScreen() {
         )}
         {cameraOpen ? <CameraCapture onAccepted={handleAcceptedPhoto} onCancel={() => setCameraOpen(false)} /> : null}
       </FormField>
+      <LocationCapture
+        latitude={draft.latitude}
+        longitude={draft.longitude}
+        locationLabel={draft.locationLabel}
+        onLocated={handleLocated}
+      />
 
       <FormField
         label="Nombre del ave"
@@ -181,7 +197,7 @@ export default function NewSightingScreen() {
         </Text>
         <Text className="mt-2 text-xl font-bold text-field-white">La ficha aún no está lista</Text>
         <Text className="mt-2 mb-4 text-sm leading-5 text-field-sage">
-          Primero se conectarán la fotografía y la ubicación automática.
+          La foto y ubicación se conservan en el borrador; el clima y guardado final se conectarán después.
         </Text>
         <PrimaryButton label="Guardar avistamiento" disabled />
       </View>

@@ -33,6 +33,12 @@
         {
           "cameraPermission": "AvistAves necesita acceso a la cámara para registrar la fotografía del avistamiento."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "AvistAves necesita tu ubicación para registrar dónde observaste el ave."
+        }
       ]
     ],
     "extra": {
