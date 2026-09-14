@@ -27,7 +27,13 @@
       "expo-status-bar",
       "expo-sqlite",
       "expo-asset",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AvistAves necesita acceso a la cámara para registrar la fotografía del avistamiento."
+        }
+      ]
     ],
     "extra": {
       "router": {},

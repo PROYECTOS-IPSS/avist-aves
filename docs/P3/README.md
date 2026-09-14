@@ -18,9 +18,23 @@ Establish coherent Android-first navigation, visual foundation, reusable UI prim
 - Reusable `AppScreen`, `AppHeader`, `PrimaryButton`, `SectionHeader`, `EmptyState`, and `FoundationCard` components.
 - Outdoor/mobile baseline: high contrast, large actions, generous spacing, concise labels, safe-area-aware scrolling.
 
-## Explicitly deferred
+## Manual Android validation
 
-No form state, validation, camera, photo persistence, GPS, permissions, reverse geocoding, Open-Meteo, SQLite-backed listing/detail, sorting, filtering, final async handling, or P12 accessibility audit was added.
+User-completed physical Android smoke test: **PASS**.
+
+- Home renders correctly.
+- Home → New navigation works.
+- New back navigation works.
+- Detail shell opens for an arbitrary ID.
+- Detail back navigation works.
+- No obvious safe-area, layout, or readability problem observed.
+- Existing development-client + Metro workflow remains functional.
+
+This is not a full P12 accessibility audit.
+
+## Explicitly deferred to P4+
+
+P3 did not implement form state, validation, camera, photo persistence, GPS, permissions, reverse geocoding, Open-Meteo, SQLite-backed listing/detail, sorting, filtering, final async handling, or the P12 accessibility audit.
 
 No fake persisted sighting card or fake production detail record is presented.
 
@@ -28,14 +42,15 @@ No fake persisted sighting card or fake production detail record is presented.
 
 - `yarn typecheck`: PASS
 - `yarn lint`: PASS
-- `yarn test`: PASS — 3 suites, 9 tests
+- `yarn test`: PASS — 3 suites, 9 tests at P3 closure
 - `npx expo-doctor`: PASS — 21/21 checks
 - Web validation: intentionally skipped
-- Android runtime validation for P3 UI: pending manual user check; P2.1 development-client workflow is available.
 
 ## Known non-blocking issues
 
-- P3 does not include a UI testing library. Existing domain/repository tests remain green; visual and native navigation checks belong to manual Android validation.
-- Detail route is validated statically by strict TypeScript and route implementation; no repository lookup occurs until later phase.
+- P3 had no UI testing library. Existing domain/repository tests remained green; physical Android smoke testing supplied navigation/visual evidence.
+- Detail route used a static shell until P4+ behavior connects real data.
+
+**P3: PASS**
 
 **READY FOR P4: YES**
