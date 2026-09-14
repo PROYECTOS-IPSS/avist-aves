@@ -8,7 +8,7 @@ type AppScreenProps = PropsWithChildren<{
 }>;
 
 export function AppScreen({ children, scroll = true }: AppScreenProps) {
-  const content = <View className="px-5 pb-10 pt-4">{children}</View>;
+  const content = <View className={`${scroll ? '' : 'flex-1'} px-5 pb-10 pt-4`}>{children}</View>;
 
   return (
     <SafeAreaView className="flex-1 bg-field-paper" edges={['top', 'bottom']}>

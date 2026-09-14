@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { Image, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
@@ -12,13 +12,23 @@ import { CameraCapture } from '../../src/components/CameraCapture';
 import { deleteOwnedDraftPhoto, persistCapturedPhoto } from '../../src/services/photoService';
 import { LocationCapture } from '../../src/components/LocationCapture';
 import { useSightingForm } from '../../src/hooks/useSightingForm';
+import { SightingsRepository } from '../../src/repositories/SightingsRepository';
+import { useWeatherForLocation } from '../../src/hooks/useWeatherForLocation';
+import type { LocationCaptureResult } from '../../src/hooks/useLocationCapture';
+import { WeatherStatus } from '../../src/components/WeatherStatus';
+import { createSightingInput } from '../../src/utils/createSightingInput';
 
 const inputClassName = 'min-h-14 rounded-2xl border border-field-line bg-field-white px-4 text-base text-field-ink';
 const inputErrorClassName = 'border-red-700';
+type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
 export default function NewSightingScreen() {
-  const { draft, errors, setField, touchField } = useSightingForm();
+  const { draft, errors, setField, touchField, validateForSave } = useSightingForm();
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveInFlightRef = useRef(false);
+  const { getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
 
   async function handleAcceptedPhoto(temporaryUri: string) {
     const persistentUri = await persistCapturedPhoto(temporaryUri);
@@ -27,10 +37,51 @@ export default function NewSightingScreen() {
     setCameraOpen(false);
     if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
   }
-  function handleLocated({ coordinates, locationLabel }: { coordinates: { latitude: number; longitude: number }; locationLabel: string }) {
+  function handleLocated({ coordinates, locationLabel }: LocationCaptureResult) {
     setField('latitude', coordinates.latitude);
     setField('longitude', coordinates.longitude);
     setField('locationLabel', locationLabel);
+    void loadWeather(coordinates);
+  }
+
+  async function handleSave() {
+    if (saveInFlightRef.current || saveStatus === 'success') return;
+    saveInFlightRef.current = true;
+
+    setSaveError(null);
+    const validationErrors = validateForSave();
+    if (Object.keys(validationErrors).length > 0) {
+      saveInFlightRef.current = false;
+      setSaveStatus('idle');
+      return;
+    }
+
+    setSaveStatus('saving');
+    try {
+      const { latitude, longitude } = draft;
+      if (latitude === null || longitude === null) {
+        saveInFlightRef.current = false;
+        setSaveStatus('idle');
+        return;
+      }
+      const coordinates = { latitude, longitude };
+      const currentWeather = await getWeatherForSave(coordinates);
+      const input = createSightingInput(draft, currentWeather);
+      if (!input.valid) {
+        saveInFlightRef.current = false;
+        setSaveStatus('idle');
+        return;
+      }
+
+      await new SightingsRepository().create(input.value);
+      setSaveStatus('success');
+      Alert.alert('Avistamiento guardado', 'El registro se guardó correctamente.', [
+        { text: 'Volver a la lista', onPress: () => router.replace('/') },
+      ], { cancelable: false });
+    } catch {
+      saveInFlightRef.current = false;
+      setSaveStatus('error');
+    }
   }
 
   return (
@@ -69,6 +120,7 @@ export default function NewSightingScreen() {
         label="Foto"
         labelId="photo-label"
         required
+        error={errors.photo}
         helper={draft.photoUri ? undefined : 'Debe tomarse con la cámara del dispositivo; no se permite galería.'}
       >
         {draft.photoUri ? (
@@ -93,8 +145,10 @@ export default function NewSightingScreen() {
         latitude={draft.latitude}
         longitude={draft.longitude}
         locationLabel={draft.locationLabel}
+        validationError={errors.location}
         onLocated={handleLocated}
       />
+      <WeatherStatus status={weatherStatus} weather={weather} />
 
       <FormField
         label="Nombre del ave"
@@ -193,13 +247,19 @@ export default function NewSightingScreen() {
 
       <View className="mt-2 rounded-3xl bg-field-pine p-5">
         <Text className="text-xs font-bold uppercase tracking-[1.5px] text-field-amber">
-          Guardado pendiente
+          {saveStatus === 'success' ? 'Guardado correcto' : 'Registro'}
         </Text>
-        <Text className="mt-2 text-xl font-bold text-field-white">La ficha aún no está lista</Text>
+        <Text className="mt-2 text-xl font-bold text-field-white">
+          {saveStatus === 'success' ? 'Avistamiento guardado' : 'Guardar avistamiento'}
+        </Text>
         <Text className="mt-2 mb-4 text-sm leading-5 text-field-sage">
-          La foto y ubicación se conservan en el borrador; el clima y guardado final se conectarán después.
+          {saveError || 'El clima es opcional; foto, ubicación y datos válidos son necesarios para guardar.'}
         </Text>
-        <PrimaryButton label="Guardar avistamiento" disabled />
+        <PrimaryButton
+          disabled={saveStatus === 'saving' || saveStatus === 'success'}
+          label={saveStatus === 'saving' ? 'Guardando…' : saveStatus === 'success' ? 'Guardado' : 'Guardar avistamiento'}
+          onPress={() => void handleSave()}
+        />
       </View>
     </AppScreen>
   );

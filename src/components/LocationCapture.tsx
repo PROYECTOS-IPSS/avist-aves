@@ -13,10 +13,11 @@ type LocationCaptureProps = {
   latitude: number | null;
   longitude: number | null;
   locationLabel: string | null;
+  validationError?: string;
   onLocated: (result: LocationCaptureResult) => void;
 };
 
-export function LocationCapture({ latitude, longitude, locationLabel, onLocated }: LocationCaptureProps) {
+export function LocationCapture({ latitude, longitude, locationLabel, validationError, onLocated }: LocationCaptureProps) {
   const { acquireLocation, error, permissionBlocked, status } = useLocationCapture(onLocated);
   const hasLocation =
     typeof latitude === 'number' &&
@@ -37,6 +38,7 @@ export function LocationCapture({ latitude, longitude, locationLabel, onLocated 
       label="Ubicación"
       labelId="location-label"
       required
+      error={validationError}
       helper="Se obtiene automáticamente con el GPS; no se puede escribir a mano."
     >
       <View className={`rounded-3xl p-4 ${hasLocation ? 'bg-field-sage' : 'bg-field-sky'}`}>
