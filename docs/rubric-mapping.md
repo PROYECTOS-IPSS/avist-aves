@@ -1,0 +1,23 @@
+# Rubric Mapping and Evidence Plan
+
+Total: **100/100 points mapped**. Evidence is collected during P1–P16 and assembled in final report; no claims are made here beyond planned implementation.
+
+| Indicator | Max | Requirement | Planned implementation / modules | Test | Evidence / report artifact |
+|---|---:|---|---|---|---|
+| 1. Framework concepts | 10 | RF-06, NFR maintainability | Expo app lifecycle, React components/hooks, TypeScript, Expo Router, NativeWind; `app/`, `src/` | Route smoke test; repository/service unit checks | Annotated route tree, screenshots, code excerpts, APK demo |
+| 2. Design patterns | 12 | Architecture | Component Pattern in screens/components; Repository Pattern in `SightingsRepository`; Service/Adapter Pattern for camera/location/weather | Repository and service behavior tests | Architecture diagram plus three real code examples and rationale |
+| 3. Framework comparison | 12 | Written preparation | Compare React Native + Expo, Ionic + Capacitor, Flutter using same criteria: language, rendering/runtime, device APIs, routing, tooling/build, testing, delivery fit | Source verification during report writing | Criteria table with cited official documentation; project-fit conclusion |
+| 4. UI design principles | 12 | NFR outdoor UX | High contrast, hierarchy, touch targets, readable type, spacing, visible primary actions, immediate feedback | Manual Android review at outdoor-like brightness; accessibility checks | Screen checklist, screenshots, short demo observations |
+| 5. UI components | 12 | RF-01–RF-04 | Reusable form fields, validation messages, cards, climate summary, empty state, buttons, loading/error states | Component/form behavior checks | Component inventory, screenshots, code excerpts |
+| 6. Intuitive interfaces | 12 | RF-03, RF-04, RF-06 | List→create→detail flow, cancel/back, direct create action, deterministic sort/filter | Manual navigation scenario | Recorded flow/screenshots and acceptance checklist |
+| 7. Peripherals | 10 | RF-01, RF-04 | `expo-camera` capture; `expo-location` permissions/GPS/reverse geocode; PhotoService/LocationService | Physical Android: permissions, camera, GPS, durable photo | APK demo, permission outcomes, device/version notes |
+| 8. API integration | 10 | RF-02 | WeatherService Open-Meteo request, parse, weather-code mapping, nullable weather persistence | Fixture/parser checks; offline/manual failure scenario | Request/response example without secrets, error evidence, detail/list screenshots |
+| 9. API optimization | 10 | RF-02, NFR responsiveness | Timeout; max one retry for recoverable errors; small coordinate-bucket cache with TTL | Fake transport checks for timeout/retry/cache hit | Timing/request-count log, code excerpt, before/after observation |
+
+## Written 34-point preparation
+
+- **Architecture (10):** retain route tree, dependency direction, state transitions, and rationale for local-first SQLite.
+- **Patterns (12):** capture repository callsite, service adapters, and component composition; explain why each exists rather than naming patterns after the fact.
+- **Comparison (12):** verify current official React Native/Expo, Ionic/Capacitor, and Flutter docs before final prose. Avoid unsupported claims in P0.
+
+Each rubric row gets: implementation commit/path, automated or manual test result, screenshot/log/video, and report paragraph. Missing evidence means point is not considered demonstrated.
