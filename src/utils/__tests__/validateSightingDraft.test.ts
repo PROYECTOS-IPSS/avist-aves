@@ -17,6 +17,7 @@ const baseDraft: SightingDraft = {
   photoUri: null,
   latitude: null,
   longitude: null,
+  locationLabel: null,
 };
 
 describe('sighting draft initialization and normalization', () => {
@@ -30,6 +31,7 @@ describe('sighting draft initialization and normalization', () => {
       photoUri: null,
       latitude: null,
       longitude: null,
+      locationLabel: null,
     });
   });
 

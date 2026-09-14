@@ -7,6 +7,7 @@ export type SightingDraft = {
   photoUri: string | null;
   latitude: number | null;
   longitude: number | null;
+  locationLabel: string | null;
 };
 
 export type NormalizedEditableSightingDraft = {
@@ -38,6 +39,7 @@ export function createInitialSightingDraft(now = new Date()): SightingDraft {
     photoUri: null,
     latitude: null,
     longitude: null,
+    locationLabel: null,
   };
 }
 
