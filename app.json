@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.wuanpack.avistaves",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,7 +24,10 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-asset",
+      "expo-dev-client"
     ]
   }
 }

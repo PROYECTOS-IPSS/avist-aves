@@ -4,14 +4,18 @@
   "main": "expo-router/entry",
   "dependencies": {
     "expo": "~57.0.22",
+    "expo-asset": "~57.0.17",
     "expo-constants": "~57.0.18",
+    "expo-dev-client": "~57.0.19",
     "expo-linking": "~57.0.10",
     "expo-router": "~57.0.21",
+    "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-dom": "^19.2.3",
     "react-native": "0.86.3",
+    "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-web": "^0.21.2",
@@ -30,13 +34,15 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "build:dev": "mkdir -p build-outputs/development && npx eas-cli build --platform android --profile development --local --output build-outputs/development/avistaves-development.apk",
+    "build:preview": "mkdir -p build-outputs/preview && npx eas-cli build --platform android --profile preview --local --output build-outputs/preview/avistaves-preview.apk"
   },
   "private": true
 }
