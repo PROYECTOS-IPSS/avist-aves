@@ -9,22 +9,48 @@ Aplicación móvil desarrollada para el examen final de Desarrollo de Aplicacion
 - TypeScript
 - Expo Router
 - NativeWind
+- expo-dev-client
+- Expo SQLite
 
 ## Estado
 
-P1 — Scaffold + Architecture Baseline
+P2.1 — Local Android Development/Preview Build Infrastructure
 
-## Desarrollo
+## Desarrollo Android
+
+1. Generar manualmente development build:
+
+   ```bash
+   yarn build:dev
+   ```
+
+2. Instalar APK generado desde `build-outputs/development/` en emulador o teléfono Android.
+
+3. Iniciar Metro dirigido al development client:
+
+   ```bash
+   yarn start
+   ```
+
+4. Abrir la development build instalada.
+
+## Preview
+
+Generar manualmente APK standalone:
 
 ```bash
-npm install
-npm run start
-npm run android
-npm run ios
-npm run web
-npm run typecheck
-npm run lint
-npm test
+yarn build:preview
 ```
 
-Esta fase contiene únicamente el scaffold, navegación placeholder y configuración base. Las funcionalidades de cámara, GPS, clima y persistencia se implementarán en fases posteriores.
+Resultado esperado: `build-outputs/preview/`.
+
+## Quality checks
+
+```bash
+yarn typecheck
+yarn lint
+yarn test
+npx expo-doctor
+```
+
+P2.1 configura builds locales, pero no genera APK/AAB automáticamente. Las funcionalidades de cámara, GPS, clima y UI funcional pertenecen a fases posteriores.

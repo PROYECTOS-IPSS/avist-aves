@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.wuanpack.avistaves",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,7 +24,22 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar"
-    ]
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-asset",
+      "expo-dev-client",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AvistAves necesita acceso a la cámara para registrar la fotografía del avistamiento."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "29a6850f-2d28-4e7e-8e02-034f473dd19f"
+      }
+    }
   }
 }
