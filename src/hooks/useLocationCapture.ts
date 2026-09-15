@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import {
   getCurrentLocation,
@@ -40,6 +41,18 @@ export function useLocationCapture(onLocated: (result: LocationCaptureResult) =>
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const operationRef = useRef<Promise<void> | null>(null);
   const nativeRequestRef = useRef<Promise<LocationCoordinates> | null>(null);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') return;
+      void getForegroundLocationPermission()
+        .then((permission) => {
+          setPermissionBlocked(!permission.granted && permission.canAskAgain === false);
+          if (permission.granted) setError(null);
+        })
+        .catch(() => undefined);
+    });
+    return () => subscription.remove();
+  }, []);
 
   const acquireLocation = useCallback(() => {
     if (operationRef.current || nativeRequestRef.current) {
