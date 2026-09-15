@@ -44,8 +44,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "jest --runInBand",
-    "build:dev": "mkdir -p build-outputs/development && npx -y eas-cli@24.3.0 build --platform android --profile development --local --output build-outputs/development/avistaves-development.apk",
-    "build:preview": "mkdir -p build-outputs/preview && npx -y eas-cli@24.3.0 build --platform android --profile preview --local --output build-outputs/preview/avistaves-preview.apk"
+    "build:dev": "mkdir -p \"$HOME/eas-local-work\" \"$HOME/eas-local-artifacts\" build-outputs/development && EAS_LOCAL_BUILD_WORKINGDIR=\"$HOME/eas-local-work\" EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$HOME/eas-local-artifacts\" npx -y eas-cli@24.3.0 build --platform android --profile development --local --output build-outputs/development/avistaves-development.apk",
+    "build:preview": "mkdir -p \"$HOME/eas-local-work\" \"$HOME/eas-local-artifacts\" build-outputs/preview && EAS_LOCAL_BUILD_WORKINGDIR=\"$HOME/eas-local-work\" EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$HOME/eas-local-artifacts\" npx -y eas-cli@24.3.0 build --platform android --profile preview --local --output build-outputs/preview/avistaves-preview.apk"
   },
   "private": true
 }

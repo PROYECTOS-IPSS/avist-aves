@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, Image, Linking, Pressable, Text, View } from 'react-native';
 import {
   CameraView,
   useCameraPermissions,
 } from 'expo-camera';
 import { PrimaryButton } from './PrimaryButton';
+import { permissionRecoveryState } from '../utils/permissionState';
 
 type CameraCaptureProps = {
   onAccepted: (temporaryUri: string) => Promise<void>;
@@ -14,7 +15,7 @@ type CameraCaptureProps = {
 type CameraStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'error';
 
 export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -22,6 +23,12 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
   const [temporaryUri, setTemporaryUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') void getPermission();
+    });
+    return () => subscription.remove();
+  }, [getPermission]);
   const cameraStatus =
     !permission || status === 'requesting' || status === 'error'
       ? status
@@ -73,8 +80,8 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
     setError(null);
     try {
       await onAccepted(temporaryUri);
-    } catch (acceptError) {
-      setError(acceptError instanceof Error ? acceptError.message : 'No se pudo guardar la fotografía. Inténtalo nuevamente.');
+    } catch {
+      setError('No se pudo guardar la fotografía. Inténtalo nuevamente.');
     } finally {
       setAccepting(false);
     }
@@ -133,7 +140,7 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
   }
 
   if (cameraStatus !== 'granted') {
-    const permanentlyDenied = permission.canAskAgain === false;
+    const permanentlyDenied = permissionRecoveryState(permission) === 'blocked';
 
     return (
       <View className="mt-3 rounded-3xl bg-field-sage p-5">
@@ -169,9 +176,9 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
           setCameraReady(true);
           setError(null);
         }}
-        onMountError={(mountError) => {
+        onMountError={() => {
           setStatus('error');
-          setError(`No se pudo iniciar la cámara: ${mountError.message}`);
+          setError('No se pudo iniciar la cámara. Revisa el permiso e inténtalo nuevamente.');
         }}
         style={{ height: 320, width: '100%' }}
       />

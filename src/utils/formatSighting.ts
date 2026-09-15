@@ -14,3 +14,6 @@ export function formatObservedAt(value: string): string {
 export function formatTemperature(value: number | null): string {
   return typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(1)} °C` : 'Clima no disponible';
 }
+export function formatQuantity(value: number): string {
+  return `${value} ${value === 1 ? 'ave' : 'aves'}`;
+}

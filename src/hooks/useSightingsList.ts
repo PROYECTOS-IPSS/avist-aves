@@ -26,7 +26,6 @@ export function useSightingsList(order: SightingsOrder) {
     requestVersion.current = version;
     setStatus('loading');
     setError(null);
-    setSightings([]);
 
     const promise = (async () => {
       try {

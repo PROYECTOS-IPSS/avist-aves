@@ -1,23 +1,28 @@
 import { useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import type { Sighting } from '../domain/sightings';
-import { formatObservedAt, formatTemperature } from '../utils/formatSighting';
+import { formatObservedAt, formatQuantity, formatTemperature } from '../utils/formatSighting';
 
 type SightingCardProps = {
   sighting: Sighting;
+  onPress?: () => void;
 };
 
-export function SightingCard({ sighting }: SightingCardProps) {
+export function SightingCard({ sighting, onPress }: SightingCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const location = sighting.locationLabel || 'Ubicación no disponible';
   const weather = sighting.weatherDescription || 'Condición no disponible';
 
   return (
-    <View
+    <Pressable
       accessible
       accessibilityLabel={`Avistamiento de ${sighting.birdName}. ${formatObservedAt(sighting.observedAt)}. ${formatTemperature(sighting.temperature)}.`}
-      className="mb-3 flex-row rounded-3xl border border-field-line bg-field-white p-4"
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityState={{ disabled: !onPress }}
+      className="mb-3 flex-row rounded-3xl border border-field-line bg-field-white p-4 active:bg-field-sage"
+      disabled={!onPress}
+      onPress={onPress}
     >
       {imageFailed ? (
         <View className="h-24 w-24 items-center justify-center rounded-2xl bg-field-sage px-2">
@@ -43,9 +48,9 @@ export function SightingCard({ sighting }: SightingCardProps) {
         <View className="mt-2 flex-row flex-wrap gap-x-3 gap-y-1">
           <Text className="text-xs font-bold text-field-pine">{formatTemperature(sighting.temperature)}</Text>
           <Text className="text-xs text-field-muted">{weather}</Text>
-          <Text className="text-xs text-field-muted">{sighting.quantity} {sighting.quantity === 1 ? 'ave' : 'aves'}</Text>
+          <Text className="text-xs text-field-muted">{formatQuantity(sighting.quantity)}</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }

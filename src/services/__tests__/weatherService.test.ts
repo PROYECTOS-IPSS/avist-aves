@@ -87,4 +87,25 @@ describe('Open-Meteo request policy', () => {
 
     await expect(fetchCurrentWeather(coordinates, { fetcher, timeoutMs: 1 })).resolves.toBeNull();
   });
+  it('requests only the current weather fields used by the app', async () => {
+    const fetcher = jest.fn() as unknown as jest.MockedFunction<WeatherFetcher>;
+    fetcher.mockResolvedValue(response(validPayload));
+
+    await fetchCurrentWeather(coordinates, { fetcher });
+
+    const [url] = fetcher.mock.calls[0];
+    expect(url).toContain('current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m');
+    expect(url).not.toContain('hourly=');
+    expect(url).not.toContain('daily=');
+  });
+
+  it('does not cache failed responses', async () => {
+    const fetcher = jest.fn() as unknown as jest.MockedFunction<WeatherFetcher>;
+    fetcher.mockResolvedValue(response({}, 400));
+
+    await fetchCurrentWeather(coordinates, { fetcher });
+    await fetchCurrentWeather(coordinates, { fetcher });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
 });

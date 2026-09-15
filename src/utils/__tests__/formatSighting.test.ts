@@ -1,4 +1,4 @@
-import { formatObservedAt, formatTemperature } from '../formatSighting';
+import { formatObservedAt, formatQuantity, formatTemperature } from '../formatSighting';
 
 describe('sighting presentation formatters', () => {
   it('formats an observation timestamp for people', () => {
@@ -15,5 +15,12 @@ describe('sighting presentation formatters', () => {
     [null, 'Clima no disponible'],
   ])('formats temperature %s', (value, expected) => {
     expect(formatTemperature(value)).toBe(expected);
+  });
+
+  it.each([
+    [1, '1 ave'],
+    [3, '3 aves'],
+  ])('formats quantity %s', (value, expected) => {
+    expect(formatQuantity(value)).toBe(expected);
   });
 });

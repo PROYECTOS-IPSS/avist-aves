@@ -41,8 +41,18 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
 export default function SightingsListScreen() {
   const [order, setOrder] = useState<SightingsOrder>('date');
   const { error, load, sightings, status } = useSightingsList(order);
-  const renderItem = useCallback(({ item }: { item: Sighting }) => <SightingCard sighting={item} />, []);
   const openRegistration = useCallback(() => router.push('/sightings/new'), []);
+  const openDetail = useCallback((id: string) => {
+    const normalizedId = id.trim();
+    if (!normalizedId) return;
+    router.push(`/sightings/${encodeURIComponent(normalizedId)}`);
+  }, []);
+  const renderItem = useCallback(
+    ({ item }: { item: Sighting }) => (
+      <SightingCard onPress={item.id.trim() ? () => openDetail(item.id) : undefined} sighting={item} />
+    ),
+    [openDetail],
+  );
 
   function renderEmptyState() {
     if (status === 'idle' || status === 'loading') return <LoadingState />;
@@ -85,7 +95,7 @@ export default function SightingsListScreen() {
             </View>
 
             <View className="mb-4">
-              <SectionHeader title="Tus registros" detail={sightingsOrderLabel(order)} />
+              <SectionHeader title="Tus registros" detail={status === 'loading' ? 'Actualizando…' : sightingsOrderLabel(order)} />
               <View className="mt-3 flex-row flex-wrap gap-2">
                 {SIGHTINGS_ORDER_OPTIONS.map((option) => {
                   const selected = option.value === order;
