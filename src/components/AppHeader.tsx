@@ -12,6 +12,7 @@ export function AppHeader({ eyebrow, title, subtitle, onBack }: AppHeaderProps) 
     <View className="mb-7">
       {onBack ? (
         <Pressable
+          accessibilityHint="Regresa a la pantalla anterior"
           accessibilityLabel="Volver"
           accessibilityRole="button"
           className="mb-6 h-12 w-12 items-center justify-center rounded-full border border-field-line bg-field-white active:bg-field-sage"

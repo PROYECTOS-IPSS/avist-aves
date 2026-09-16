@@ -17,8 +17,9 @@ export function AppScreen({ children, scroll = true }: AppScreenProps) {
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {content}
         </ScrollView>

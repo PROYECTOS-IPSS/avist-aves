@@ -91,7 +91,7 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
     return (
       <View className="mt-3 items-center rounded-3xl bg-field-sage p-5">
         <ActivityIndicator color="#193D32" />
-        <Text className="mt-3 text-center text-sm text-field-pine">Comprobando permiso de cámara…</Text>
+        <Text accessibilityLiveRegion="polite" className="mt-3 text-center text-sm text-field-pine">Comprobando permiso de cámara…</Text>
       </View>
     );
   }
@@ -105,15 +105,16 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
           resizeMode="contain"
           source={{ uri: temporaryUri }}
         />
-        <Text className="mt-3 text-sm font-bold text-field-pine">Vista previa lista</Text>
+        <Text accessibilityLiveRegion="polite" className="mt-3 text-sm font-bold text-field-pine">Vista previa lista</Text>
         {error ? (
-          <Text accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
+          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
             {error}
           </Text>
         ) : null}
         <View className="mt-3 gap-3">
-          <PrimaryButton disabled={accepting} label={accepting ? 'Guardando foto…' : 'Usar esta foto'} onPress={handleAccept} />
+          <PrimaryButton accessibilityHint="Guarda esta fotografía en el registro" busy={accepting} disabled={accepting} label={accepting ? 'Guardando foto…' : 'Usar esta foto'} onPress={handleAccept} />
           <Pressable
+            accessibilityHint="Descarta esta vista previa y vuelve a la cámara"
             accessibilityRole="button"
             accessibilityState={{ disabled: accepting }}
             className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3"
@@ -134,7 +135,7 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
     return (
       <View className="mt-3 items-center rounded-3xl bg-field-sage p-5">
         <ActivityIndicator color="#193D32" />
-        <Text className="mt-3 text-center text-sm text-field-pine">Solicitando acceso a la cámara…</Text>
+        <Text accessibilityLiveRegion="polite" className="mt-3 text-center text-sm text-field-pine">Solicitando acceso a la cámara…</Text>
       </View>
     );
   }
@@ -149,17 +150,17 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
           AvistAves necesita la cámara para tomar la fotografía obligatoria del avistamiento. No se usa una galería.
         </Text>
         {error ? (
-          <Text accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
+          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
             {error}
           </Text>
         ) : null}
         <View className="mt-4 gap-3">
           {permanentlyDenied ? (
-            <PrimaryButton label="Abrir ajustes" onPress={() => Linking.openSettings().catch(() => setError('No se pudieron abrir los ajustes del dispositivo.'))} />
+            <PrimaryButton accessibilityHint="Abre ajustes para permitir el acceso a la cámara" label="Abrir ajustes" onPress={() => Linking.openSettings().catch(() => setError('No se pudieron abrir los ajustes del dispositivo.'))} />
           ) : (
-            <PrimaryButton label="Permitir cámara" onPress={handleRequestPermission} />
+            <PrimaryButton accessibilityHint="Solicita permiso para usar la cámara" label="Permitir cámara" onPress={handleRequestPermission} />
           )}
-          <Pressable accessibilityRole="button" className="items-center py-2" onPress={onCancel}>
+          <Pressable accessibilityRole="button" className="min-h-12 items-center justify-center px-4" onPress={onCancel}>
             <Text className="font-bold text-field-pine">Cancelar</Text>
           </Pressable>
         </View>
@@ -184,13 +185,13 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
       />
       <Text className="px-2 pt-3 text-center text-sm text-field-sage">Encuadra el ave y toma una foto clara.</Text>
       {error ? (
-        <Text accessibilityRole="alert" className="px-2 pt-2 text-center text-sm leading-5 text-red-200">
+        <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="px-2 pt-2 text-center text-sm leading-5 text-red-200">
           {error}
         </Text>
       ) : null}
       <View className="mt-3 gap-3">
-        <PrimaryButton disabled={!cameraReady || capturing} label={capturing ? 'Capturando…' : 'Capturar foto'} onPress={handleCapture} />
-        <Pressable accessibilityRole="button" className="items-center py-2" onPress={onCancel}>
+        <PrimaryButton accessibilityHint="Captura una fotografía con la cámara trasera" busy={capturing} disabled={!cameraReady || capturing} label={capturing ? 'Capturando…' : 'Capturar foto'} onPress={handleCapture} />
+        <Pressable accessibilityRole="button" className="min-h-12 items-center justify-center px-4" onPress={onCancel}>
           <Text className="font-bold text-field-sage">Cancelar</Text>
         </Pressable>
       </View>

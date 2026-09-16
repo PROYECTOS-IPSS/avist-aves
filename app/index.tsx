@@ -14,7 +14,7 @@ import { SIGHTINGS_ORDER_OPTIONS, sightingsOrderLabel } from '../src/utils/sight
 
 function LoadingState() {
   return (
-    <View className="items-center rounded-3xl border border-field-line bg-field-white p-8">
+    <View accessibilityLiveRegion="polite" className="items-center rounded-3xl border border-field-line bg-field-white p-8">
       <ActivityIndicator color="#193D32" />
       <Text className="mt-3 text-sm font-semibold text-field-muted">Cargando tus avistamientos…</Text>
     </View>
@@ -30,9 +30,9 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <View className="rounded-3xl border border-red-200 bg-field-white p-6">
       <Text className="text-xl font-bold text-field-ink">No pudimos cargar tus avistamientos</Text>
-      <Text className="mt-2 text-sm leading-5 text-field-muted">{message}</Text>
+      <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">{message}</Text>
       <View className="mt-5">
-        <PrimaryButton label="Reintentar" onPress={onRetry} />
+        <PrimaryButton accessibilityHint="Vuelve a cargar tus avistamientos" label="Reintentar" onPress={onRetry} />
       </View>
     </View>
   );
@@ -90,17 +90,18 @@ export default function SightingsListScreen() {
               <Text className="max-w-[290px] text-2xl font-bold leading-8 text-field-white">Cada encuentro merece una página.</Text>
               <Text className="mt-3 max-w-[300px] text-sm leading-5 text-field-sage">Añade una observación cuando estés listo para salir al terreno.</Text>
               <View className="mt-6">
-                <PrimaryButton label="Registrar avistamiento" onPress={openRegistration} />
+                <PrimaryButton accessibilityHint="Abre el formulario para registrar un avistamiento" label="Registrar avistamiento" onPress={openRegistration} />
               </View>
             </View>
 
             <View className="mb-4">
               <SectionHeader title="Tus registros" detail={status === 'loading' ? 'Actualizando…' : sightingsOrderLabel(order)} />
-              <View className="mt-3 flex-row flex-wrap gap-2">
+              <View accessibilityLabel="Orden de registros" accessibilityRole="radiogroup" className="mt-3 flex-row flex-wrap gap-2">
                 {SIGHTINGS_ORDER_OPTIONS.map((option) => {
                   const selected = option.value === order;
                   return (
                     <Pressable
+                      accessibilityHint={selected ? 'Orden seleccionado' : 'Selecciona este orden'}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       accessibilityLabel={`Ordenar por ${option.label}`}

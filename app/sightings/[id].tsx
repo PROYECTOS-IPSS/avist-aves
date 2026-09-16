@@ -14,7 +14,7 @@ import type { Sighting } from '../../src/domain/sightings';
 
 function DetailLoading() {
   return (
-    <View className="items-center rounded-3xl border border-field-line bg-field-white p-8">
+    <View accessibilityLiveRegion="polite" className="items-center rounded-3xl border border-field-line bg-field-white p-8">
       <ActivityIndicator color="#193D32" />
       <Text className="mt-3 text-sm font-semibold text-field-muted">Cargando avistamiento…</Text>
     </View>
@@ -30,9 +30,9 @@ function DetailError({ message, onRetry }: DetailErrorProps) {
   return (
     <View className="rounded-3xl border border-red-200 bg-field-white p-6">
       <Text className="text-xl font-bold text-field-ink">No pudimos cargar este avistamiento</Text>
-      <Text className="mt-2 text-sm leading-5 text-field-muted">{message}</Text>
+      <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">{message}</Text>
       <View className="mt-5">
-        <PrimaryButton label="Reintentar" onPress={() => void onRetry()} />
+        <PrimaryButton accessibilityHint="Vuelve a cargar este avistamiento" label="Reintentar" onPress={() => void onRetry()} />
       </View>
     </View>
   );
@@ -48,7 +48,7 @@ function SightingDetailContent({ sighting }: { sighting: Sighting }) {
   return (
     <>
       {imageFailed || !sighting.photoUri ? (
-        <View className="h-80 items-center justify-center rounded-3xl bg-field-sage px-6">
+        <View accessible accessibilityLabel="Fotografía no disponible" accessibilityRole="image" className="h-80 items-center justify-center rounded-3xl bg-field-sage px-6">
           <Text className="text-xs font-bold uppercase tracking-[2px] text-field-moss">Fotografía</Text>
           <Text className="mt-3 text-center text-lg font-bold text-field-pine">Foto no disponible</Text>
         </View>
@@ -70,8 +70,8 @@ function SightingDetailContent({ sighting }: { sighting: Sighting }) {
       <View className="mt-6 rounded-3xl bg-field-sage p-5">
         <Text className="text-xs font-bold uppercase tracking-[1.5px] text-field-moss">Dónde ocurrió</Text>
         <Text className="mt-2 text-xl font-bold text-field-pine">{locationLabel}</Text>
-        <Text className="mt-2 text-sm text-field-pine">
-          Lat. {formatCoordinateForDisplay(sighting.latitude)} · Lon. {formatCoordinateForDisplay(sighting.longitude)}
+        <Text className="mt-2 text-sm text-field-moss">
+          Coordenadas de referencia · Lat. {formatCoordinateForDisplay(sighting.latitude)} · Lon. {formatCoordinateForDisplay(sighting.longitude)}
         </Text>
       </View>
 

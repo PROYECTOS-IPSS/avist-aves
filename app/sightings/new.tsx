@@ -80,6 +80,7 @@ export default function NewSightingScreen() {
       ], { cancelable: false });
     } catch {
       saveInFlightRef.current = false;
+      setSaveError('No se pudo guardar el avistamiento. Revisa los datos e inténtalo nuevamente.');
       setSaveStatus('error');
     }
   }
@@ -246,16 +247,18 @@ export default function NewSightingScreen() {
       </FormField>
 
       <View className="mt-2 rounded-3xl bg-field-pine p-5">
-        <Text className="text-xs font-bold uppercase tracking-[1.5px] text-field-amber">
-          {saveStatus === 'success' ? 'Guardado correcto' : 'Registro'}
+        <Text accessibilityLiveRegion="polite" className="text-xs font-bold uppercase tracking-[1.5px] text-field-amber">
+          {saveStatus === 'success' ? 'Guardado correcto' : saveStatus === 'error' ? 'No se pudo guardar' : 'Registro'}
         </Text>
         <Text className="mt-2 text-xl font-bold text-field-white">
-          {saveStatus === 'success' ? 'Avistamiento guardado' : 'Guardar avistamiento'}
+          {saveStatus === 'success' ? 'Avistamiento guardado' : saveStatus === 'error' ? 'Guardar nuevamente' : 'Guardar avistamiento'}
         </Text>
-        <Text className="mt-2 mb-4 text-sm leading-5 text-field-sage">
+        <Text accessibilityLiveRegion="polite" accessibilityRole={saveError ? 'alert' : undefined} className="mt-2 mb-4 text-sm leading-5 text-field-sage">
           {saveError || 'El clima es opcional; foto, ubicación y datos válidos son necesarios para guardar.'}
         </Text>
         <PrimaryButton
+          accessibilityHint={saveStatus === 'saving' ? 'Espera mientras se guarda el registro' : 'Guarda el avistamiento'}
+          busy={saveStatus === 'saving'}
           disabled={saveStatus === 'saving' || saveStatus === 'success'}
           label={saveStatus === 'saving' ? 'Guardando…' : saveStatus === 'success' ? 'Guardado' : 'Guardar avistamiento'}
           onPress={() => void handleSave()}
