@@ -12,7 +12,8 @@ import { FormField } from '../../src/components/FormField';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { CameraCapture } from '../../src/components/CameraCapture';
-import { deleteOwnedPhoto, persistSelectedPhoto } from '../../src/services/photoService';
+import { persistSelectedPhoto } from '../../src/services/photoService';
+import { createDraftPhotoLifecycle } from '../../src/services/draftPhotoLifecycle';
 import { LocationCapture } from '../../src/components/LocationCapture';
 import { useSightingForm } from '../../src/hooks/useSightingForm';
 import { SightingsRepository } from '../../src/repositories/SightingsRepository';
@@ -50,6 +51,9 @@ export default function NewSightingScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const saveInFlightRef = useRef(false);
+  const photoUpdateInFlightRef = useRef(false);
+  const mountedRef = useRef(false);
+  const [draftPhotoLifecycle] = useState(createDraftPhotoLifecycle);
   const scrollRef = useRef<ScrollView>(null);
   const photoLayoutRef = useRef<LayoutBox | null>(null);
   const locationLayoutRef = useRef<LayoutBox | null>(null);
@@ -57,6 +61,14 @@ export default function NewSightingScreen() {
   const contentHeightRef = useRef(0);
   const focusTokenRef = useRef(0);
   const { clearWeather, getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (!saveInFlightRef.current) void draftPhotoLifecycle.abandon();
+    };
+  }, [draftPhotoLifecycle]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
@@ -132,13 +144,26 @@ export default function NewSightingScreen() {
   }
 
   async function handleAcceptedPhoto(sourceUri: string) {
-    const persistentUri = await persistSelectedPhoto(sourceUri);
-    const replacedUri = draft.photoUri;
-    setField('photoUri', persistentUri);
-    setGalleryError(null);
-    setCameraPermissionError(null);
-    setCameraOpen(false);
-    if (replacedUri) await deleteOwnedPhoto(replacedUri);
+    if (saveInFlightRef.current || photoUpdateInFlightRef.current) return;
+    photoUpdateInFlightRef.current = true;
+
+    try {
+      const persistentUri = await persistSelectedPhoto(sourceUri);
+      if (!mountedRef.current || saveInFlightRef.current) {
+        await draftPhotoLifecycle.discard(persistentUri);
+        return;
+      }
+
+      const adopted = await draftPhotoLifecycle.replace(persistentUri);
+      if (!adopted || !mountedRef.current) return;
+
+      setField('photoUri', persistentUri);
+      setGalleryError(null);
+      setCameraPermissionError(null);
+      setCameraOpen(false);
+    } finally {
+      photoUpdateInFlightRef.current = false;
+    }
   }
 
   async function handlePickFromGallery() {
@@ -177,15 +202,23 @@ export default function NewSightingScreen() {
       }
       await handleAcceptedPhoto(sourceUri);
     } catch {
-      setGalleryError('No se pudo seleccionar la imagen. Inténtalo nuevamente.');
+      if (mountedRef.current) {
+        setGalleryError('No se pudo seleccionar la imagen. Inténtalo nuevamente.');
+      }
     }
   }
 
   async function handleRemovePhoto() {
-    const photoUri = draft.photoUri;
+    if (saveInFlightRef.current || photoUpdateInFlightRef.current) return;
+    photoUpdateInFlightRef.current = true;
     setField('photoUri', null);
     setGalleryError(null);
-    if (photoUri) await deleteOwnedPhoto(photoUri);
+
+    try {
+      await draftPhotoLifecycle.remove();
+    } finally {
+      photoUpdateInFlightRef.current = false;
+    }
   }
 
   function applyPickerValue(mode: PickerMode, selectedDate: Date) {
@@ -229,7 +262,7 @@ export default function NewSightingScreen() {
   }
 
   async function handleSave() {
-    if (saveInFlightRef.current || saveStatus === 'success') return;
+    if (saveInFlightRef.current || photoUpdateInFlightRef.current || saveStatus === 'success') return;
     saveInFlightRef.current = true;
 
     setSaveError(null);
@@ -242,28 +275,35 @@ export default function NewSightingScreen() {
     }
 
     setSaveStatus('saving');
+    let persisted = false;
     try {
       const { latitude, longitude } = draft;
       if (latitude === null || longitude === null) {
-        saveInFlightRef.current = false;
-        setSaveStatus('idle');
+        if (mountedRef.current) setSaveStatus('idle');
         return;
       }
       const coordinates = { latitude, longitude };
       const currentWeather = await getWeatherForSave(coordinates);
       const input = createSightingInput(draft, currentWeather);
       if (!input.valid) {
-        saveInFlightRef.current = false;
-        setSaveStatus('idle');
+        if (mountedRef.current) setSaveStatus('idle');
         return;
       }
 
       await new SightingsRepository().create(input.value);
-      setSaveStatus('success');
+      draftPhotoLifecycle.commit();
+      persisted = true;
+      if (mountedRef.current) setSaveStatus('success');
     } catch {
-      saveInFlightRef.current = false;
-      setSaveError('No se pudo guardar el avistamiento. Revisa los datos e inténtalo nuevamente.');
-      setSaveStatus('error');
+      if (mountedRef.current) {
+        setSaveError('No se pudo guardar el avistamiento. Revisa los datos e inténtalo nuevamente.');
+        setSaveStatus('error');
+      }
+    } finally {
+      if (!persisted) {
+        saveInFlightRef.current = false;
+        if (!mountedRef.current) void draftPhotoLifecycle.abandon();
+      }
     }
   }
 

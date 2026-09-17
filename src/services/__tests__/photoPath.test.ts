@@ -24,6 +24,7 @@ describe('photo path helpers', () => {
     ['file:///documents/sightings/photos/other.jpg', false],
     ['file:///documents/sightings/photos/photo-one.jpg/child', false],
     ['file:///documents/other/photo-one.jpg', false],
+    ['content://gallery/photo-one.jpg', false],
   ])('accepts only owned draft photo paths: %s', (uri, expected) => {
     expect(isOwnedPhotoPath(uri, 'file:///documents/sightings/photos')).toBe(expected);
   });
