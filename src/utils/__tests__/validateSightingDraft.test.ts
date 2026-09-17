@@ -99,6 +99,21 @@ describe('sighting editable validation', () => {
   ])('rejects invalid date/time: %s %s', (observedDate, observedTime) => {
     expect(validateEditableDraft({ ...baseDraft, observedDate, observedTime }).observedAt).toBeDefined();
   });
+
+  it('accepts past and current timestamps using injected local time', () => {
+    const now = new Date(2026, 8, 16, 21, 30);
+    expect(validateEditableDraft({ ...baseDraft, observedDate: '2026-09-15', observedTime: '23:00' }, now).observedAt).toBeUndefined();
+    expect(validateEditableDraft({ ...baseDraft, observedDate: '2026-09-16', observedTime: '21:30' }, now).observedAt).toBeUndefined();
+  });
+
+  it.each([
+    ['2026-09-16', '21:31'],
+    ['2026-09-17', '10:00'],
+  ])('rejects future timestamp %s %s with Spanish error', (observedDate, observedTime) => {
+    expect(validateEditableDraft({ ...baseDraft, observedDate, observedTime }, new Date(2026, 8, 16, 21, 30))).toMatchObject({
+      observedAt: 'La fecha y hora del avistamiento no pueden estar en el futuro.',
+    });
+  });
 });
 
 describe('whole draft validation', () => {

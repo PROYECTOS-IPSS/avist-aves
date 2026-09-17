@@ -16,8 +16,9 @@ function hasValidBirdNameCharacters(value: string): boolean {
   return sanitizeBirdName(value) === value && Array.from(value).length <= BIRD_NAME_MAX_LENGTH;
 }
 
-export function validateEditableDraft(draft: SightingDraft): ValidationErrors {
+export function validateEditableDraft(draft: SightingDraft, now = new Date()): ValidationErrors {
   const errors: ValidationErrors = {};
+  const observedAt = parseDraftDateTime(draft);
 
   if (!draft.birdName.trim()) {
     errors.birdName = 'Ingresa el nombre del ave o escribe “No identificada”.';
@@ -25,8 +26,10 @@ export function validateEditableDraft(draft: SightingDraft): ValidationErrors {
     errors.birdName = 'Usa hasta 30 caracteres: letras, números, espacios, # o &.';
   }
 
-  if (!parseDraftDateTime(draft)) {
+  if (!observedAt) {
     errors.observedAt = 'Usa una fecha válida con formato AAAA-MM-DD y una hora HH:MM.';
+  } else if (observedAt.getTime() > now.getTime()) {
+    errors.observedAt = 'La fecha y hora del avistamiento no pueden estar en el futuro.';
   }
 
   if (!/^\d+$/.test(draft.quantity.trim()) || Number(draft.quantity) < 1) {
@@ -36,8 +39,8 @@ export function validateEditableDraft(draft: SightingDraft): ValidationErrors {
   return errors;
 }
 
-export function validateWholeDraft(draft: SightingDraft): ValidationErrors {
-  const errors = validateEditableDraft(draft);
+export function validateWholeDraft(draft: SightingDraft, now = new Date()): ValidationErrors {
+  const errors = validateEditableDraft(draft, now);
   if (!draft.photoUri) {
     errors.photo = 'La fotografía es obligatoria.';
   }
@@ -54,8 +57,8 @@ export function validateWholeDraft(draft: SightingDraft): ValidationErrors {
   return errors;
 }
 
-export function normalizeEditableDraft(draft: SightingDraft): ValidationResult<NormalizedEditableSightingDraft> {
-  const errors = validateEditableDraft(draft);
+export function normalizeEditableDraft(draft: SightingDraft, now = new Date()): ValidationResult<NormalizedEditableSightingDraft> {
+  const errors = validateEditableDraft(draft, now);
   const observedAt = parseDraftDateTime(draft);
 
   if (Object.keys(errors).length > 0 || !observedAt) {

@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { Image, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
 import { FormField } from '../../src/components/FormField';
+import { FormInfo } from '../../src/components/FormInfo';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { CameraCapture } from '../../src/components/CameraCapture';
-import { deleteOwnedDraftPhoto, persistCapturedPhoto } from '../../src/services/photoService';
+import { deleteOwnedDraftPhoto, persistSelectedPhoto } from '../../src/services/photoService';
 import { LocationCapture } from '../../src/components/LocationCapture';
 import { useSightingForm } from '../../src/hooks/useSightingForm';
 import { SightingsRepository } from '../../src/repositories/SightingsRepository';
@@ -34,10 +36,55 @@ export default function NewSightingScreen() {
   const { draft, errors, setField, touchField, validateForSave } = useSightingForm();
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const saveInFlightRef = useRef(false);
   const { clearWeather, getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
+
+  async function handleAcceptedPhoto(sourceUri: string) {
+    const persistentUri = await persistSelectedPhoto(sourceUri);
+    const replacedUri = draft.photoUri;
+    setField('photoUri', persistentUri);
+    setGalleryError(null);
+    setCameraOpen(false);
+    if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
+  }
+
+  async function handlePickFromGallery() {
+    setGalleryError(null);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setGalleryError('Necesitamos permiso de galería para seleccionar una imagen. Puedes usar la cámara igualmente.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        allowsMultipleSelection: false,
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+
+      const sourceUri = result.assets[0]?.uri;
+      if (!sourceUri) {
+        setGalleryError('No se encontró una imagen seleccionable. Inténtalo nuevamente.');
+        return;
+      }
+      await handleAcceptedPhoto(sourceUri);
+    } catch {
+      setGalleryError('No se pudo seleccionar la imagen. Inténtalo nuevamente.');
+    }
+  }
+
+  async function handleRemovePhoto() {
+    const photoUri = draft.photoUri;
+    setField('photoUri', null);
+    setGalleryError(null);
+    if (photoUri) await deleteOwnedDraftPhoto(photoUri);
+  }
 
   function applyPickerValue(mode: PickerMode, selectedDate: Date) {
     if (mode === 'date') setField('observedDate', formatDraftDate(selectedDate));
@@ -47,11 +94,14 @@ export default function NewSightingScreen() {
 
   function openPicker(mode: PickerMode) {
     touchField(mode === 'date' ? 'observedDate' : 'observedTime');
-    const value = parseDraftDateTime(draft) ?? new Date();
+    const now = new Date();
+    const draftValue = parseDraftDateTime(draft) ?? now;
+    const value = mode === 'date' && draftValue > now ? now : draftValue;
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         mode,
         value,
+        ...(mode === 'date' ? { maximumDate: now } : {}),
         is24Hour: true,
         onValueChange: (_event, selectedDate) => applyPickerValue(mode, selectedDate),
         onDismiss: () => setPickerMode(null),
@@ -61,19 +111,6 @@ export default function NewSightingScreen() {
     setPickerMode(mode);
   }
 
-  async function handleAcceptedPhoto(temporaryUri: string) {
-    const persistentUri = await persistCapturedPhoto(temporaryUri);
-    const replacedUri = draft.photoUri;
-    setField('photoUri', persistentUri);
-    setCameraOpen(false);
-    if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
-  }
-
-  async function handleRemovePhoto() {
-    const photoUri = draft.photoUri;
-    setField('photoUri', null);
-    if (photoUri) await deleteOwnedDraftPhoto(photoUri);
-  }
 
   function handleLocated({ coordinates, locationLabel }: LocationCaptureResult) {
     setField('latitude', coordinates.latitude);
@@ -158,9 +195,29 @@ export default function NewSightingScreen() {
             </View>
           </View>
         ) : (
-          <PrimaryButton label="Tomar foto" onPress={() => setCameraOpen(true)} />
+          !cameraOpen ? (
+            <View className="gap-3">
+              <FormInfo message="Captura una foto o añade una desde tu galería para el registro." />
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <PrimaryButton label="Tomar foto" onPress={() => setCameraOpen(true)} />
+                </View>
+                <View className="flex-1">
+                  <Pressable accessibilityLabel="Elegir de galería" accessibilityRole="button" className="min-h-14 flex-row items-center justify-between rounded-2xl border border-field-pine bg-field-white px-5 py-4" onPress={() => void handlePickFromGallery()}>
+                    <Text className="text-base font-bold text-field-pine">Elegir de galería</Text>
+                    <Text className="text-2xl text-field-pine">→</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ) : null
         )}
         {cameraOpen ? <CameraCapture onAccepted={handleAcceptedPhoto} onCancel={() => setCameraOpen(false)} /> : null}
+        {galleryError ? (
+          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
+            {galleryError}
+          </Text>
+        ) : null}
       </FormField>
 
       <LocationCapture
@@ -231,6 +288,7 @@ export default function NewSightingScreen() {
         <DateTimePicker
           mode={pickerMode}
           value={selectedDate}
+          maximumDate={pickerMode === 'date' ? new Date() : undefined}
           is24Hour
           onValueChange={(_event, date) => applyPickerValue(pickerMode, date)}
           onDismiss={() => setPickerMode(null)}

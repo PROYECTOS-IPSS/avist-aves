@@ -43,7 +43,14 @@
           "locationWhenInUsePermission": "AvistAves necesita tu ubicación para registrar dónde observaste el ave."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AvistAves necesita acceso a tus fotos para seleccionar una imagen del registro.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "router": {},

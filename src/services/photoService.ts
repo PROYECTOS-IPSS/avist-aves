@@ -11,9 +11,9 @@ export function isOwnedPhotoUri(uri: string): boolean {
   return isOwnedPhotoPath(uri, DRAFT_PHOTO_DIRECTORY.uri);
 }
 
-export async function persistCapturedPhoto(tempUri: string): Promise<string> {
-  const source = new File(tempUri);
-  const destination = new File(DRAFT_PHOTO_DIRECTORY, createDraftPhotoFilename(tempUri));
+export async function persistSelectedPhoto(sourceUri: string): Promise<string> {
+  const source = new File(sourceUri);
+  const destination = new File(DRAFT_PHOTO_DIRECTORY, createDraftPhotoFilename(sourceUri));
 
   try {
     DRAFT_PHOTO_DIRECTORY.create({ intermediates: true, idempotent: true });

@@ -7,6 +7,7 @@ import {
   type LocationCoordinates,
 } from '../utils/locationHelpers';
 import { FormField } from './FormField';
+import { FormInfo } from './FormInfo';
 import { PrimaryButton } from './PrimaryButton';
 
 type LocationCaptureProps = {
@@ -45,7 +46,7 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
             </Text>
           </>
         ) : (
-          <Text className="text-sm leading-5 text-field-pine">Necesitamos tu ubicación para registrar dónde observaste el ave.</Text>
+          <FormInfo message="Necesitamos tu ubicación para registrar dónde observaste el ave." />
         )}
         {error ? (
           <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">
