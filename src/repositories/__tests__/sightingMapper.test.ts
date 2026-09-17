@@ -79,3 +79,16 @@ describe('getOrderByClause', () => {
     );
   });
 });
+
+describe('mapSightingRow validation', () => {
+  it.each([
+    [null, 'Invalid sighting row'],
+    [{ ...completeRow, id: '' }, 'Invalid sighting id'],
+    [{ ...completeRow, bird_name: '' }, 'Invalid sighting bird_name'],
+    [{ ...completeRow, latitude: 'not-a-number' }, 'Invalid sighting latitude'],
+    [{ ...completeRow, quantity: 1.5 }, 'Invalid sighting quantity'],
+    [{ ...completeRow, notes: 42 }, 'Invalid nullable sighting notes'],
+  ])('rejects malformed row with %s', (row, message) => {
+    expect(() => mapSightingRow(row)).toThrow(message);
+  });
+});

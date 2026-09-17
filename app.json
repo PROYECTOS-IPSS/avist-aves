@@ -11,6 +11,9 @@
     },
     "android": {
       "package": "com.wuanpack.avistaves",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,6 +41,14 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "AvistAves necesita tu ubicación para registrar dónde observaste el ave."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AvistAves necesita acceso a tus fotos para seleccionar una imagen del registro.",
+          "microphonePermission": false
         }
       ]
     ],

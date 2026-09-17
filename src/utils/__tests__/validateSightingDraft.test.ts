@@ -1,9 +1,14 @@
 import {
   createInitialSightingDraft,
+  formatDraftDate,
+  formatDraftDateForDisplay,
+  formatDraftTime,
   type SightingDraft,
 } from '../../domain/sightingDraft';
 import {
+  BIRD_NAME_MAX_LENGTH,
   normalizeEditableDraft,
+  sanitizeBirdName,
   validateEditableDraft,
   validateWholeDraft,
 } from '../validateSightingDraft';
@@ -51,6 +56,13 @@ describe('sighting draft initialization and normalization', () => {
       expect(result.value.observedAt).toBe(new Date(2026, 8, 14, 10, 5).toISOString());
     }
   });
+
+  it('formats native picker values for storage and display', () => {
+    const picked = new Date(2026, 8, 14, 7, 5);
+    expect(formatDraftDate(picked)).toBe('2026-09-14');
+    expect(formatDraftTime(picked)).toBe('07:05');
+    expect(formatDraftDateForDisplay(picked)).toBe('14/09/2026');
+  });
 });
 
 describe('sighting editable validation', () => {
@@ -58,9 +70,18 @@ describe('sighting editable validation', () => {
     expect(validateEditableDraft({ ...baseDraft, birdName }).birdName).toBeDefined();
   });
 
-  it('accepts ordinary names and No identificada', () => {
-    expect(validateEditableDraft(baseDraft)).toEqual({});
+  it('accepts accented names, spaces, numbers, #, &, and no identificada', () => {
+    expect(validateEditableDraft({ ...baseDraft, birdName: 'Martín & Martín 2 #1' }).birdName).toBeUndefined();
     expect(validateEditableDraft({ ...baseDraft, birdName: 'No identificada' })).toEqual({});
+  });
+
+  it.each(['Cóndor!!!', 'Ave???', 'Tiuque@Sur', 'A'.repeat(BIRD_NAME_MAX_LENGTH + 1)])('rejects unsupported bird names: %s', (birdName) => {
+    expect(validateEditableDraft({ ...baseDraft, birdName }).birdName).toBeDefined();
+  });
+
+  it('sanitizes invalid input during entry and caps it at 30 characters', () => {
+    expect(sanitizeBirdName('Cóndor!!! @ Sur')).toBe('Cóndor  Sur');
+    expect(Array.from(sanitizeBirdName('A'.repeat(40))).length).toBe(BIRD_NAME_MAX_LENGTH);
   });
 
   it.each(['', '0', '-1', '1.5', 'abc', '2e2'])('rejects invalid quantities: %j', (quantity) => {
@@ -77,6 +98,21 @@ describe('sighting editable validation', () => {
     ['14-09-2026', '10:05'],
   ])('rejects invalid date/time: %s %s', (observedDate, observedTime) => {
     expect(validateEditableDraft({ ...baseDraft, observedDate, observedTime }).observedAt).toBeDefined();
+  });
+
+  it('accepts past and current timestamps using injected local time', () => {
+    const now = new Date(2026, 8, 16, 21, 30);
+    expect(validateEditableDraft({ ...baseDraft, observedDate: '2026-09-15', observedTime: '23:00' }, now).observedAt).toBeUndefined();
+    expect(validateEditableDraft({ ...baseDraft, observedDate: '2026-09-16', observedTime: '21:30' }, now).observedAt).toBeUndefined();
+  });
+
+  it.each([
+    ['2026-09-16', '21:31'],
+    ['2026-09-17', '10:00'],
+  ])('rejects future timestamp %s %s with Spanish error', (observedDate, observedTime) => {
+    expect(validateEditableDraft({ ...baseDraft, observedDate, observedTime }, new Date(2026, 8, 16, 21, 30))).toMatchObject({
+      observedAt: 'La fecha y hora del avistamiento no pueden estar en el futuro.',
+    });
   });
 });
 

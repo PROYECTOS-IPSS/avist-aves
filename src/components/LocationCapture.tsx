@@ -1,4 +1,5 @@
 import { Linking, Pressable, Text, View } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 
 import { useLocationCapture, type LocationCaptureResult } from '../hooks/useLocationCapture';
 import {
@@ -14,10 +15,13 @@ type LocationCaptureProps = {
   longitude: number | null;
   locationLabel: string | null;
   validationError?: string;
+  highlightToken?: number;
+  onLayout?: (event: LayoutChangeEvent) => void;
   onLocated: (result: LocationCaptureResult) => void;
+  onClear: () => void;
 };
 
-export function LocationCapture({ latitude, longitude, locationLabel, validationError, onLocated }: LocationCaptureProps) {
+export function LocationCapture({ latitude, longitude, locationLabel, validationError, highlightToken, onLayout, onLocated, onClear }: LocationCaptureProps) {
   const { acquireLocation, error, permissionBlocked, status } = useLocationCapture(onLocated);
   const hasLocation =
     typeof latitude === 'number' &&
@@ -34,17 +38,11 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
       : 'Obtener ubicación';
 
   return (
-    <FormField
-      label="Ubicación"
-      labelId="location-label"
-      required
-      error={validationError}
-      helper="Se obtiene automáticamente con el GPS; no se puede escribir a mano."
-    >
+    <FormField highlightToken={highlightToken} label="Ubicación" labelId="location-label" onLayout={onLayout} required error={validationError}>
       <View className={`rounded-3xl p-4 ${hasLocation ? 'bg-field-sage' : 'bg-field-sky'}`}>
         {hasLocation && coordinates ? (
           <>
-            <Text className="text-base font-bold text-field-pine">{locationLabel || 'Ubicación obtenida'}</Text>
+            <Text accessibilityLiveRegion="polite" className="text-base font-bold text-field-pine">{locationLabel || 'Ubicación obtenida'}</Text>
             <Text className="mt-2 text-sm text-field-pine">
               Lat. {formatCoordinateForDisplay(coordinates.latitude)} · Lon. {formatCoordinateForDisplay(coordinates.longitude)}
             </Text>
@@ -53,15 +51,21 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
           <Text className="text-sm leading-5 text-field-pine">Necesitamos tu ubicación para registrar dónde observaste el ave.</Text>
         )}
         {error ? (
-          <Text accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">
+          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">
             {error}
           </Text>
         ) : null}
         <View className="mt-4">
-          <PrimaryButton disabled={busy} label={actionLabel} onPress={acquireLocation} />
+          <PrimaryButton accessibilityHint="Obtiene o actualiza el lugar de observación" disabled={busy} label={actionLabel} onPress={acquireLocation} />
         </View>
+        {hasLocation ? (
+          <Pressable accessibilityLabel="Eliminar ubicación" accessibilityRole="button" className="mt-3 min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={onClear}>
+            <Text className="font-bold text-field-pine">Eliminar ubicación</Text>
+          </Pressable>
+        ) : null}
         {permissionBlocked ? (
           <Pressable
+            accessibilityHint="Abre los ajustes de permisos del dispositivo"
             accessibilityRole="button"
             className="mt-3 min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3"
             onPress={() => Linking.openSettings().catch(() => undefined)}

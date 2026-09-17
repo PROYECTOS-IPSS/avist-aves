@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/datetimepicker": "9.1.0",
     "expo": "~57.0.22",
     "expo-asset": "~57.0.17",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.18",
     "expo-dev-client": "~57.0.19",
     "expo-file-system": "~57.0.7",
+    "expo-image-picker": "~57.0.17",
     "expo-linking": "~57.0.10",
     "expo-location": "~57.0.17",
     "expo-router": "~57.0.21",
@@ -44,8 +47,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "jest --runInBand",
-    "build:dev": "mkdir -p \"$HOME/eas-local-work\" \"$HOME/eas-local-artifacts\" build-outputs/development && EAS_LOCAL_BUILD_WORKINGDIR=\"$HOME/eas-local-work\" EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$HOME/eas-local-artifacts\" npx -y eas-cli@24.3.0 build --platform android --profile development --local --output build-outputs/development/avistaves-development.apk",
-    "build:preview": "mkdir -p \"$HOME/eas-local-work\" \"$HOME/eas-local-artifacts\" build-outputs/preview && EAS_LOCAL_BUILD_WORKINGDIR=\"$HOME/eas-local-work\" EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$HOME/eas-local-artifacts\" npx -y eas-cli@24.3.0 build --platform android --profile preview --local --output build-outputs/preview/avistaves-preview.apk"
+    "build:dev": "bash scripts/eas-local-build.sh development",
+    "build:preview": "bash scripts/eas-local-build.sh preview"
   },
   "private": true
 }

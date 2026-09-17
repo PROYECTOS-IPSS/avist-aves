@@ -1,50 +1,47 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 
-import type { Sighting, SightingsOrder } from '../domain/sightings';
+import type { Sighting, SightingsSort } from '../domain/sightings';
 import { SightingsRepository } from '../repositories/SightingsRepository';
+import { sortSightings } from '../utils/sightingsList';
 
 type ListStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error';
 
-type InFlightLoad = {
-  order: SightingsOrder;
-  promise: Promise<void>;
-};
-
-export function useSightingsList(order: SightingsOrder) {
-  const [sightings, setSightings] = useState<Sighting[]>([]);
+export function useSightingsList(sort: SightingsSort) {
+  const [sourceSightings, setSourceSightings] = useState<Sighting[]>([]);
   const [status, setStatus] = useState<ListStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
-  const inFlightRef = useRef<InFlightLoad | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  const sightings = useMemo(() => sortSightings(sourceSightings, sort), [sourceSightings, sort]);
 
   const load = useCallback(async () => {
-    const inFlight = inFlightRef.current;
-    if (inFlight?.order === order) return inFlight.promise;
+    if (inFlightRef.current) return inFlightRef.current;
 
     const version = requestVersion.current + 1;
     requestVersion.current = version;
     setStatus('loading');
     setError(null);
 
-    const promise = (async () => {
+    let promise: Promise<void>;
+    promise = (async () => {
       try {
-        const rows = await new SightingsRepository().findAll(order);
+        const rows = await new SightingsRepository().findAll('date');
         if (requestVersion.current !== version) return;
-        setSightings(rows);
+        setSourceSightings(rows);
         setStatus(rows.length > 0 ? 'success' : 'empty');
       } catch {
         if (requestVersion.current !== version) return;
         setStatus('error');
         setError('No pudimos cargar tus avistamientos. Inténtalo nuevamente.');
       } finally {
-        if (inFlightRef.current?.order === order) inFlightRef.current = null;
+        inFlightRef.current = null;
       }
     })();
 
-    inFlightRef.current = { order, promise };
+    inFlightRef.current = promise;
     return promise;
-  }, [order]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

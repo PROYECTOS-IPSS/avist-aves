@@ -64,10 +64,20 @@ export function useWeatherForLocation() {
     }
   }, []);
 
+  const clearWeather = useCallback(() => {
+    requestVersionRef.current += 1;
+    requestRef.current = null;
+    weatherKeyRef.current = null;
+    weatherRef.current = null;
+    statusRef.current = 'idle';
+    setWeather(null);
+    setStatus('idle');
+  }, []);
+
   const getWeatherForSave = useCallback(
     (coordinates: LocationCoordinates) => loadWeather(coordinates),
     [loadWeather],
   );
 
-  return { getWeatherForSave, loadWeather, status, weather };
+  return { clearWeather, getWeatherForSave, loadWeather, status, weather };
 }

@@ -108,4 +108,20 @@ describe('Open-Meteo request policy', () => {
 
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+
+  it.each([429, 500, 503])('retries recoverable HTTP status %s once', async (status) => {
+    const fetcher = jest.fn() as unknown as jest.MockedFunction<WeatherFetcher>;
+    fetcher.mockResolvedValueOnce(response({}, status)).mockResolvedValueOnce(response(validPayload));
+
+    await expect(fetchCurrentWeather(coordinates, { fetcher })).resolves.toMatchObject({ weatherCode: 3 });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry a malformed successful response', async () => {
+    const fetcher = jest.fn() as unknown as jest.MockedFunction<WeatherFetcher>;
+    fetcher.mockResolvedValue(response({ current: { relative_humidity_2m: 76, weather_code: 3 } }));
+
+    await expect(fetchCurrentWeather(coordinates, { fetcher })).resolves.toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });

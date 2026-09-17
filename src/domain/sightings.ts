@@ -19,3 +19,9 @@ export type Sighting = {
 export type CreateSightingInput = Omit<Sighting, 'id' | 'createdAt' | 'updatedAt'>;
 
 export type SightingsOrder = 'date' | 'name' | 'quantity';
+export type SortDirection = 'asc' | 'desc';
+
+export type SightingsSort = {
+  field: SightingsOrder;
+  direction: SortDirection;
+};
