@@ -15,9 +15,10 @@ type LocationCaptureProps = {
   locationLabel: string | null;
   validationError?: string;
   onLocated: (result: LocationCaptureResult) => void;
+  onClear: () => void;
 };
 
-export function LocationCapture({ latitude, longitude, locationLabel, validationError, onLocated }: LocationCaptureProps) {
+export function LocationCapture({ latitude, longitude, locationLabel, validationError, onLocated, onClear }: LocationCaptureProps) {
   const { acquireLocation, error, permissionBlocked, status } = useLocationCapture(onLocated);
   const hasLocation =
     typeof latitude === 'number' &&
@@ -34,13 +35,7 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
       : 'Obtener ubicación';
 
   return (
-    <FormField
-      label="Ubicación"
-      labelId="location-label"
-      required
-      error={validationError}
-      helper="Se obtiene automáticamente con el GPS; no se puede escribir a mano."
-    >
+    <FormField label="Ubicación" labelId="location-label" required error={validationError}>
       <View className={`rounded-3xl p-4 ${hasLocation ? 'bg-field-sage' : 'bg-field-sky'}`}>
         {hasLocation && coordinates ? (
           <>
@@ -60,6 +55,11 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
         <View className="mt-4">
           <PrimaryButton accessibilityHint="Obtiene o actualiza el lugar de observación" disabled={busy} label={actionLabel} onPress={acquireLocation} />
         </View>
+        {hasLocation ? (
+          <Pressable accessibilityLabel="Eliminar ubicación" accessibilityRole="button" className="mt-3 min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={onClear}>
+            <Text className="font-bold text-field-pine">Eliminar ubicación</Text>
+          </Pressable>
+        ) : null}
         {permissionBlocked ? (
           <Pressable
             accessibilityHint="Abre los ajustes de permisos del dispositivo"

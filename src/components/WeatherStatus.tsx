@@ -13,7 +13,7 @@ export function WeatherStatus({ status, weather }: WeatherStatusProps) {
   const backgroundClass = status === 'unavailable' ? 'bg-field-amber' : status === 'idle' ? 'bg-field-sky' : 'bg-field-sage';
 
   return (
-    <FormField label="Clima actual" labelId="weather-label" helper="Se consulta con las coordenadas del avistamiento y no bloquea el guardado.">
+    <FormField label="Clima actual" labelId="weather-label">
       <View className={`rounded-3xl p-4 ${backgroundClass}`}>
         {status === 'loading' ? (
           <View className="flex-row items-center gap-3">

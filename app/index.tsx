@@ -9,8 +9,9 @@ import { PrimaryButton } from '../src/components/PrimaryButton';
 import { SectionHeader } from '../src/components/SectionHeader';
 import { SightingCard } from '../src/components/SightingCard';
 import { useSightingsList } from '../src/hooks/useSightingsList';
-import type { Sighting, SightingsOrder } from '../src/domain/sightings';
+import type { Sighting, SightingsSort } from '../src/domain/sightings';
 import { SIGHTINGS_ORDER_OPTIONS, sightingsOrderLabel } from '../src/utils/sightingsList';
+
 
 function LoadingState() {
   return (
@@ -39,8 +40,8 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
 }
 
 export default function SightingsListScreen() {
-  const [order, setOrder] = useState<SightingsOrder>('date');
-  const { error, load, sightings, status } = useSightingsList(order);
+  const [sort, setSort] = useState<SightingsSort>({ field: 'date', direction: 'desc' });
+  const { error, load, sightings, status } = useSightingsList(sort);
   const openRegistration = useCallback(() => router.push('/sightings/new'), []);
   const openDetail = useCallback((id: string) => {
     const normalizedId = id.trim();
@@ -95,22 +96,25 @@ export default function SightingsListScreen() {
             </View>
 
             <View className="mb-4">
-              <SectionHeader title="Tus registros" detail={status === 'loading' ? 'Actualizando…' : sightingsOrderLabel(order)} />
+              <SectionHeader title="Tus registros" detail={status === 'loading' ? 'Actualizando…' : sightingsOrderLabel(sort)} />
               <View accessibilityLabel="Orden de registros" accessibilityRole="radiogroup" className="mt-3 flex-row flex-wrap gap-2">
                 {SIGHTINGS_ORDER_OPTIONS.map((option) => {
-                  const selected = option.value === order;
+                  const selected = option.value === sort.field;
+                  const label = selected ? sightingsOrderLabel(sort) : option.label;
                   return (
                     <Pressable
                       accessibilityHint={selected ? 'Orden seleccionado' : 'Selecciona este orden'}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
-                      accessibilityLabel={`Ordenar por ${option.label}`}
+                      accessibilityLabel={`Ordenar por ${label}`}
                       className={`min-h-12 flex-row items-center rounded-2xl border px-4 py-3 ${selected ? 'border-field-pine bg-field-pine' : 'border-field-line bg-field-white'}`}
                       key={option.value}
-                      onPress={() => setOrder(option.value)}
+                      onPress={() => setSort((current) => current.field === option.value && option.value !== 'date'
+                        ? { ...current, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+                        : { field: option.value, direction: option.value === 'name' ? 'asc' : 'desc' })}
                     >
                       <Text className={`text-sm font-bold ${selected ? 'text-field-white' : 'text-field-ink'}`}>
-                        {selected ? '✓ ' : ''}{option.label}
+                        {selected ? '✓ ' : ''}{label}
                       </Text>
                     </Pressable>
                   );

@@ -114,10 +114,20 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
         <View className="mt-3 gap-3">
           <PrimaryButton accessibilityHint="Guarda esta fotografía en el registro" busy={accepting} disabled={accepting} label={accepting ? 'Guardando foto…' : 'Usar esta foto'} onPress={handleAccept} />
           <Pressable
-            accessibilityHint="Descarta esta vista previa y vuelve a la cámara"
+            accessibilityHint="Descarta esta fotografía y vuelve al formulario"
             accessibilityRole="button"
             accessibilityState={{ disabled: accepting }}
             className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3"
+            disabled={accepting}
+            onPress={onCancel}
+          >
+            <Text className="font-bold text-field-pine">Cancelar</Text>
+          </Pressable>
+          <Pressable
+            accessibilityHint="Descarta esta vista previa y vuelve a la cámara"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: accepting }}
+            className="min-h-12 items-center justify-center px-4 py-3"
             disabled={accepting}
             onPress={() => {
               setTemporaryUri(null);

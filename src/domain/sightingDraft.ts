@@ -29,6 +29,18 @@ function pad(value: number): string {
   return value.toString().padStart(2, '0');
 }
 
+export function formatDraftDate(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function formatDraftTime(date: Date): string {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function formatDraftDateForDisplay(date: Date): string {
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
 export function createInitialSightingDraft(now = new Date()): SightingDraft {
   return {
     birdName: '',

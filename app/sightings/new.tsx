@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, Image, Text, TextInput, View } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Image, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
-import { FoundationCard } from '../../src/components/FoundationCard';
 import { FormField } from '../../src/components/FormField';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -17,18 +17,49 @@ import { useWeatherForLocation } from '../../src/hooks/useWeatherForLocation';
 import type { LocationCaptureResult } from '../../src/hooks/useLocationCapture';
 import { WeatherStatus } from '../../src/components/WeatherStatus';
 import { createSightingInput } from '../../src/utils/createSightingInput';
+import {
+  formatDraftDate,
+  formatDraftDateForDisplay,
+  formatDraftTime,
+  parseDraftDateTime,
+} from '../../src/domain/sightingDraft';
+import { BIRD_NAME_MAX_LENGTH, sanitizeBirdName } from '../../src/utils/validateSightingDraft';
 
 const inputClassName = 'min-h-14 rounded-2xl border border-field-line bg-field-white px-4 text-base text-field-ink';
 const inputErrorClassName = 'border-red-700';
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
+type PickerMode = 'date' | 'time';
 
 export default function NewSightingScreen() {
   const { draft, errors, setField, touchField, validateForSave } = useSightingForm();
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const saveInFlightRef = useRef(false);
-  const { getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
+  const { clearWeather, getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
+
+  function applyPickerValue(mode: PickerMode, selectedDate: Date) {
+    if (mode === 'date') setField('observedDate', formatDraftDate(selectedDate));
+    else setField('observedTime', formatDraftTime(selectedDate));
+    setPickerMode(null);
+  }
+
+  function openPicker(mode: PickerMode) {
+    touchField(mode === 'date' ? 'observedDate' : 'observedTime');
+    const value = parseDraftDateTime(draft) ?? new Date();
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        mode,
+        value,
+        is24Hour: true,
+        onValueChange: (_event, selectedDate) => applyPickerValue(mode, selectedDate),
+        onDismiss: () => setPickerMode(null),
+      });
+      return;
+    }
+    setPickerMode(mode);
+  }
 
   async function handleAcceptedPhoto(temporaryUri: string) {
     const persistentUri = await persistCapturedPhoto(temporaryUri);
@@ -37,11 +68,25 @@ export default function NewSightingScreen() {
     setCameraOpen(false);
     if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
   }
+
+  async function handleRemovePhoto() {
+    const photoUri = draft.photoUri;
+    setField('photoUri', null);
+    if (photoUri) await deleteOwnedDraftPhoto(photoUri);
+  }
+
   function handleLocated({ coordinates, locationLabel }: LocationCaptureResult) {
     setField('latitude', coordinates.latitude);
     setField('longitude', coordinates.longitude);
     setField('locationLabel', locationLabel);
     void loadWeather(coordinates);
+  }
+
+  function handleRemoveLocation() {
+    setField('latitude', null);
+    setField('longitude', null);
+    setField('locationLabel', null);
+    clearWeather();
   }
 
   async function handleSave() {
@@ -75,15 +120,14 @@ export default function NewSightingScreen() {
 
       await new SightingsRepository().create(input.value);
       setSaveStatus('success');
-      Alert.alert('Avistamiento guardado', 'El registro se guardó correctamente.', [
-        { text: 'Volver a la lista', onPress: () => router.replace('/') },
-      ], { cancelable: false });
     } catch {
       saveInFlightRef.current = false;
       setSaveError('No se pudo guardar el avistamiento. Revisa los datos e inténtalo nuevamente.');
       setSaveStatus('error');
     }
   }
+
+  const selectedDate = parseDraftDateTime(draft) ?? new Date();
 
   return (
     <AppScreen>
@@ -94,36 +138,9 @@ export default function NewSightingScreen() {
         onBack={() => router.back()}
       />
 
-      <FoundationCard
-        label="Fotografía · requerida"
-        title={draft.photoUri ? 'Foto lista' : 'Pendiente de cámara'}
-        description={draft.photoUri ? 'La fotografía persistente está lista para esta ficha.' : 'Toma la fotografía con la cámara antes de guardar la ficha.'}
-        mark={draft.photoUri ? '✓' : '□'}
-        tone="sage"
-      />
-      <View className="h-3" />
-      <FoundationCard
-        label="Ubicación · requerida"
-        title={draft.latitude !== null && draft.longitude !== null ? 'Ubicación lista' : 'Pendiente de GPS'}
-        description={
-          draft.latitude !== null && draft.longitude !== null
-            ? draft.locationLabel || 'Coordenadas obtenidas; nombre de lugar no disponible.'
-            : 'La ubicación se obtendrá automáticamente; no se puede editar a mano.'
-        }
-        mark={draft.latitude !== null && draft.longitude !== null ? '✓' : '⌖'}
-        tone="sky"
-      />
-
-      <View className="h-8" />
       <SectionHeader title="Datos de observación" detail="Borrador" />
 
-      <FormField
-        label="Foto"
-        labelId="photo-label"
-        required
-        error={errors.photo}
-        helper={draft.photoUri ? undefined : 'Debe tomarse con la cámara del dispositivo; no se permite galería.'}
-      >
+      <FormField label="Foto" labelId="photo-label" required error={errors.photo}>
         {draft.photoUri ? (
           <View className="rounded-3xl bg-field-sage p-4">
             <Image
@@ -133,8 +150,11 @@ export default function NewSightingScreen() {
               source={{ uri: draft.photoUri }}
             />
             <Text className="mt-3 text-sm font-bold text-field-pine">Foto lista para el registro</Text>
-            <View className="mt-3">
+            <View className="mt-3 gap-3">
               <PrimaryButton label="Repetir foto" onPress={() => setCameraOpen(true)} />
+              <Pressable accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={() => void handleRemovePhoto()}>
+                <Text className="font-bold text-field-pine">Eliminar foto</Text>
+              </Pressable>
             </View>
           </View>
         ) : (
@@ -142,12 +162,14 @@ export default function NewSightingScreen() {
         )}
         {cameraOpen ? <CameraCapture onAccepted={handleAcceptedPhoto} onCancel={() => setCameraOpen(false)} /> : null}
       </FormField>
+
       <LocationCapture
         latitude={draft.latitude}
         longitude={draft.longitude}
         locationLabel={draft.locationLabel}
         validationError={errors.location}
         onLocated={handleLocated}
+        onClear={handleRemoveLocation}
       />
       <WeatherStatus status={weatherStatus} weather={weather} />
 
@@ -155,7 +177,6 @@ export default function NewSightingScreen() {
         label="Nombre del ave"
         labelId="bird-name-label"
         required
-        helper="Puedes escribir un nombre común o “No identificada”."
         error={errors.birdName}
       >
         <TextInput
@@ -164,60 +185,59 @@ export default function NewSightingScreen() {
           autoCapitalize="sentences"
           autoCorrect
           className={`${inputClassName} ${errors.birdName ? inputErrorClassName : ''}`}
+          maxLength={BIRD_NAME_MAX_LENGTH}
           onBlur={() => touchField('birdName')}
-          onChangeText={(value) => setField('birdName', value)}
+          onChangeText={(value) => setField('birdName', sanitizeBirdName(value))}
           placeholder="Ej. Chucao"
           placeholderTextColor="#7A8A80"
           returnKeyType="next"
           value={draft.birdName}
         />
+        <Text accessibilityLiveRegion="polite" className="mt-2 text-right text-xs text-field-muted">
+          {Array.from(draft.birdName).length} / {BIRD_NAME_MAX_LENGTH}
+        </Text>
       </FormField>
 
       <View className="flex-row gap-3">
         <View className="flex-1">
-          <FormField
-            label="Fecha"
-            labelId="observed-date-label"
-            required
-            error={errors.observedAt}
-          >
-            <TextInput
+          <FormField label="Fecha" labelId="observed-date-label" required error={errors.observedAt}>
+            <Pressable
               accessibilityLabel="Fecha de observación"
               accessibilityLabelledBy="observed-date-label"
-              className={`${inputClassName} ${errors.observedAt ? inputErrorClassName : ''}`}
-              keyboardType="numbers-and-punctuation"
-              onBlur={() => touchField('observedDate')}
-              onChangeText={(value) => setField('observedDate', value)}
-              placeholder="AAAA-MM-DD"
-              placeholderTextColor="#7A8A80"
-              value={draft.observedDate}
-            />
+              accessibilityRole="button"
+              className={`${inputClassName} justify-center ${errors.observedAt ? inputErrorClassName : ''}`}
+              onPress={() => openPicker('date')}
+            >
+              <Text className="text-base text-field-ink">{formatDraftDateForDisplay(selectedDate)}</Text>
+            </Pressable>
           </FormField>
         </View>
         <View className="flex-1">
-          <FormField label="Hora" labelId="observed-time-label" required helper="HH:MM">
-            <TextInput
+          <FormField label="Hora" labelId="observed-time-label" required error={errors.observedAt}>
+            <Pressable
               accessibilityLabel="Hora de observación"
               accessibilityLabelledBy="observed-time-label"
-              className={`${inputClassName} ${errors.observedAt ? inputErrorClassName : ''}`}
-              keyboardType="numbers-and-punctuation"
-              onBlur={() => touchField('observedTime')}
-              onChangeText={(value) => setField('observedTime', value)}
-              placeholder="HH:MM"
-              placeholderTextColor="#7A8A80"
-              value={draft.observedTime}
-            />
+              accessibilityRole="button"
+              className={`${inputClassName} justify-center ${errors.observedAt ? inputErrorClassName : ''}`}
+              onPress={() => openPicker('time')}
+            >
+              <Text className="text-base text-field-ink">{draft.observedTime}</Text>
+            </Pressable>
           </FormField>
         </View>
       </View>
 
-      <FormField
-        label="Cantidad"
-        labelId="quantity-label"
-        required
-        helper="Número entero de aves observadas."
-        error={errors.quantity}
-      >
+      {Platform.OS !== 'android' && pickerMode ? (
+        <DateTimePicker
+          mode={pickerMode}
+          value={selectedDate}
+          is24Hour
+          onValueChange={(_event, date) => applyPickerValue(pickerMode, date)}
+          onDismiss={() => setPickerMode(null)}
+        />
+      ) : null}
+
+      <FormField label="Cantidad" labelId="quantity-label" required helper="Número entero de aves observadas." error={errors.quantity}>
         <TextInput
           accessibilityLabel="Cantidad de aves"
           accessibilityLabelledBy="quantity-label"
@@ -264,6 +284,17 @@ export default function NewSightingScreen() {
           onPress={() => void handleSave()}
         />
       </View>
+
+      <Modal accessibilityViewIsModal animationType="fade" transparent visible={saveStatus === 'success'} onRequestClose={() => undefined}>
+        <View className="flex-1 justify-center bg-black/50 px-6">
+          <View accessible accessibilityRole="alert" className="rounded-3xl bg-field-white p-6">
+            <Text accessibilityLabel="Guardado correcto" className="text-3xl font-bold text-field-pine">✓</Text>
+            <Text className="mt-3 text-2xl font-bold text-field-ink">Avistamiento guardado</Text>
+            <Text className="mt-2 mb-5 text-base leading-6 text-field-muted">El registro se guardó correctamente.</Text>
+            <PrimaryButton label="Continuar" onPress={() => router.replace('/')} />
+          </View>
+        </View>
+      </Modal>
     </AppScreen>
   );
 }

@@ -6,11 +6,23 @@ import {
   type ValidationResult,
 } from '../domain/sightingDraft';
 
+export const BIRD_NAME_MAX_LENGTH = 30;
+
+export function sanitizeBirdName(value: string): string {
+  return Array.from(value.replace(/[^\p{L}\p{M}\p{N} #&]/gu, '')).slice(0, BIRD_NAME_MAX_LENGTH).join('');
+}
+
+function hasValidBirdNameCharacters(value: string): boolean {
+  return sanitizeBirdName(value) === value && Array.from(value).length <= BIRD_NAME_MAX_LENGTH;
+}
+
 export function validateEditableDraft(draft: SightingDraft): ValidationErrors {
   const errors: ValidationErrors = {};
 
   if (!draft.birdName.trim()) {
     errors.birdName = 'Ingresa el nombre del ave o escribe “No identificada”.';
+  } else if (!hasValidBirdNameCharacters(draft.birdName)) {
+    errors.birdName = 'Usa hasta 30 caracteres: letras, números, espacios, # o &.';
   }
 
   if (!parseDraftDateTime(draft)) {
