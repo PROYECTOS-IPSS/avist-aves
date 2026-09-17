@@ -32,7 +32,7 @@ export function validateEditableDraft(
     errors.birdName = "Ingresa el nombre del ave o escribe “No identificada”.";
   } else if (!hasValidBirdNameCharacters(draft.birdName)) {
     errors.birdName =
-      "Usa hasta 30 caracteres: letras, números, espacios, # o &.";
+      `Usa hasta ${BIRD_NAME_MAX_LENGTH} caracteres: letras, números, espacios, # o &.`;
   }
 
   if (!observedAt) {

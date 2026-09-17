@@ -75,13 +75,23 @@ describe('sighting editable validation', () => {
     expect(validateEditableDraft({ ...baseDraft, birdName: 'No identificada' })).toEqual({});
   });
 
-  it.each(['Cóndor!!!', 'Ave???', 'Tiuque@Sur', 'A'.repeat(BIRD_NAME_MAX_LENGTH + 1)])('rejects unsupported bird names: %s', (birdName) => {
+  it.each(['Cóndor!!!', 'Ave???', 'Tiuque@Sur'])('rejects unsupported bird names: %s', (birdName) => {
     expect(validateEditableDraft({ ...baseDraft, birdName }).birdName).toBeDefined();
   });
 
-  it('sanitizes invalid input during entry and caps it at 30 characters', () => {
+  it('accepts a bird name with exactly 50 characters', () => {
+    expect(validateEditableDraft({ ...baseDraft, birdName: 'A'.repeat(BIRD_NAME_MAX_LENGTH) }).birdName).toBeUndefined();
+  });
+
+  it('rejects 51 characters with the correct limit message', () => {
+    expect(
+      validateEditableDraft({ ...baseDraft, birdName: 'A'.repeat(BIRD_NAME_MAX_LENGTH + 1) }).birdName,
+    ).toBe('Usa hasta 50 caracteres: letras, números, espacios, # o &.');
+  });
+
+  it('sanitizes invalid input during entry and caps it at 50 characters', () => {
     expect(sanitizeBirdName('Cóndor!!! @ Sur')).toBe('Cóndor  Sur');
-    expect(Array.from(sanitizeBirdName('A'.repeat(40))).length).toBe(BIRD_NAME_MAX_LENGTH);
+    expect(Array.from(sanitizeBirdName('A'.repeat(60))).length).toBe(BIRD_NAME_MAX_LENGTH);
   });
 
   it.each(['', '0', '-1', '1.5', 'abc', '2e2'])('rejects invalid quantities: %j', (quantity) => {
