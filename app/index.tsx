@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { AppHeader } from '../src/components/AppHeader';
 import { AppScreen } from '../src/components/AppScreen';
@@ -9,36 +9,12 @@ import { EmptyState } from '../src/components/EmptyState';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { SectionHeader } from '../src/components/SectionHeader';
 import { SightingCard } from '../src/components/SightingCard';
+import { ErrorCard, LoadingCard } from '../src/components/StatusCards';
 import { useSightingsList } from '../src/hooks/useSightingsList';
 import type { Sighting, SightingsSort } from '../src/domain/sightings';
 import { deleteSighting } from '../src/services/sightingService';
 import { SIGHTINGS_ORDER_OPTIONS, sightingsOrderLabel } from '../src/utils/sightingsList';
 
-function LoadingState() {
-  return (
-    <View accessibilityLiveRegion="polite" className="items-center rounded-3xl border border-field-line bg-field-white p-8">
-      <ActivityIndicator color="#193D32" />
-      <Text className="mt-3 text-sm font-semibold text-field-muted">Cargando tus avistamientos…</Text>
-    </View>
-  );
-}
-
-type ErrorStateProps = {
-  message: string;
-  onRetry: () => void;
-};
-
-function ErrorState({ message, onRetry }: ErrorStateProps) {
-  return (
-    <View className="rounded-3xl border border-red-200 bg-field-white p-6">
-      <Text className="text-xl font-bold text-field-ink">No pudimos cargar tus avistamientos</Text>
-      <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">{message}</Text>
-      <View className="mt-5">
-        <PrimaryButton accessibilityHint="Vuelve a cargar tus avistamientos" label="Reintentar" onPress={onRetry} />
-      </View>
-    </View>
-  );
-}
 export default function SightingsListScreen() {
   const [sort, setSort] = useState<SightingsSort>({ field: 'date', direction: 'desc' });
   const [pendingDelete, setPendingDelete] = useState<Sighting | null>(null);
@@ -79,8 +55,8 @@ export default function SightingsListScreen() {
   );
 
   function renderEmptyState() {
-    if (status === 'idle' || status === 'loading') return <LoadingState />;
-    if (status === 'error') return <ErrorState message={error ?? 'Revisa la base local e inténtalo nuevamente.'} onRetry={() => void load()} />;
+    if (status === 'idle' || status === 'loading') return <LoadingCard />;
+    if (status === 'error') return <ErrorCard message={error ?? 'Revisa la base local e inténtalo nuevamente.'} onRetry={() => void load()} retryHint="Vuelve a cargar tus avistamientos" />;
 
     return (
       <EmptyState

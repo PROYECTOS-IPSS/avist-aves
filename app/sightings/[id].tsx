@@ -1,43 +1,18 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
 import { ConfirmationModal } from '../../src/components/ConfirmationModal';
 import { EmptyState } from '../../src/components/EmptyState';
-import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { useSightingDetail } from '../../src/hooks/useSightingDetail';
+import { ErrorCard, LoadingCard } from '../../src/components/StatusCards';
 import { deleteSighting } from '../../src/services/sightingService';
 import { formatCoordinateForDisplay } from '../../src/utils/locationHelpers';
 import { formatObservedAt, formatQuantity, formatTemperature } from '../../src/utils/formatSighting';
 import { normalizeRouteId } from '../../src/utils/routeParams';
 import type { Sighting } from '../../src/domain/sightings';
-function DetailLoading() {
-  return (
-    <View accessibilityLiveRegion="polite" className="items-center rounded-3xl border border-field-line bg-field-white p-8">
-      <ActivityIndicator color="#193D32" />
-      <Text className="mt-3 text-sm font-semibold text-field-muted">Cargando avistamiento…</Text>
-    </View>
-  );
-}
-
-type DetailErrorProps = {
-  message: string;
-  onRetry: () => void;
-};
-
-function DetailError({ message, onRetry }: DetailErrorProps) {
-  return (
-    <View className="rounded-3xl border border-red-200 bg-field-white p-6">
-      <Text className="text-xl font-bold text-field-ink">No pudimos cargar este avistamiento</Text>
-      <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">{message}</Text>
-      <View className="mt-5">
-        <PrimaryButton accessibilityHint="Vuelve a cargar este avistamiento" label="Reintentar" onPress={() => void onRetry()} />
-      </View>
-    </View>
-  );
-}
 function SightingDetailContent({ sighting, onDelete }: { sighting: Sighting; onDelete: () => void }) {
   const [imageFailed, setImageFailed] = useState(false);
   const notes = sighting.notes?.trim();
@@ -144,8 +119,15 @@ export default function SightingDetailScreen() {
         onBack={() => router.back()}
       />
 
-      {status === 'loading' ? <DetailLoading /> : null}
-      {status === 'error' ? <DetailError message={error ?? 'Inténtalo nuevamente.'} onRetry={load} /> : null}
+      {status === 'loading' ? <LoadingCard message="Cargando avistamiento…" /> : null}
+      {status === 'error' ? (
+        <ErrorCard
+          message={error ?? 'Inténtalo nuevamente.'}
+          onRetry={() => void load()}
+          retryHint="Vuelve a cargar este avistamiento"
+          title="No pudimos cargar este avistamiento"
+        />
+      ) : null}
       {status === 'notFound' ? (
         <EmptyState
           actionLabel="Volver al inicio"

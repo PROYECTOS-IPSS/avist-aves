@@ -5,6 +5,7 @@ import {
   type ValidationErrors,
   type ValidationResult,
 } from "../domain/sightingDraft";
+import { isValidCoordinates } from "./locationHelpers";
 
 export const BIRD_NAME_MAX_LENGTH = 50;
 
@@ -59,18 +60,7 @@ export function validateWholeDraft(
     errors.photo = "La fotografía es obligatoria.";
   }
 
-  const hasValidLatitude =
-    typeof draft.latitude === "number" &&
-    Number.isFinite(draft.latitude) &&
-    draft.latitude >= -90 &&
-    draft.latitude <= 90;
-  const hasValidLongitude =
-    typeof draft.longitude === "number" &&
-    Number.isFinite(draft.longitude) &&
-    draft.longitude >= -180 &&
-    draft.longitude <= 180;
-
-  if (!hasValidLatitude || !hasValidLongitude) {
+  if (!isValidCoordinates(draft.latitude, draft.longitude)) {
     errors.location = "La ubicación GPS es obligatoria.";
   }
 

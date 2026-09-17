@@ -20,6 +20,14 @@ export function createDraftPhotoLifecycle(): DraftPhotoLifecycle {
   let currentUri: string | null = null;
   let committed = false;
 
+  async function removeCurrentPhoto(): Promise<void> {
+    if (committed) return;
+
+    const uri = currentUri;
+    currentUri = null;
+    if (uri) await safelyDeleteDraftPhoto(uri);
+  }
+
   return {
     async discard(uri: string): Promise<void> {
       await safelyDeleteDraftPhoto(uri);
@@ -37,25 +45,13 @@ export function createDraftPhotoLifecycle(): DraftPhotoLifecycle {
       return true;
     },
 
-    async remove(): Promise<void> {
-      if (committed) return;
-
-      const uri = currentUri;
-      currentUri = null;
-      if (uri) await safelyDeleteDraftPhoto(uri);
-    },
+    remove: removeCurrentPhoto,
 
     commit(): void {
       committed = true;
       currentUri = null;
     },
 
-    async abandon(): Promise<void> {
-      if (committed) return;
-
-      const uri = currentUri;
-      currentUri = null;
-      if (uri) await safelyDeleteDraftPhoto(uri);
-    },
+    abandon: removeCurrentPhoto,
   };
 }

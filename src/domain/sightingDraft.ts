@@ -44,8 +44,8 @@ export function formatDraftDateForDisplay(date: Date): string {
 export function createInitialSightingDraft(now = new Date()): SightingDraft {
   return {
     birdName: '',
-    observedDate: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-    observedTime: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    observedDate: formatDraftDate(now),
+    observedTime: formatDraftTime(now),
     quantity: '1',
     notes: '',
     photoUri: null,
