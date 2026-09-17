@@ -127,4 +127,10 @@ export class SightingsRepository {
     );
     return row === null ? null : mapSightingRow(row);
   }
+
+  async deleteById(id: string): Promise<boolean> {
+    const database = await this.databaseProvider();
+    const result = await database.runAsync('DELETE FROM sightings WHERE id = ?', id);
+    return result.changes > 0;
+  }
 }

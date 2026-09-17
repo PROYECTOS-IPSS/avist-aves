@@ -1,17 +1,18 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import { Image, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useCameraPermissions } from 'expo-camera';
+import { AppState, Image, Linking, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import type { LayoutChangeEvent, ScrollView } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
 import { FormField } from '../../src/components/FormField';
-import { FormInfo } from '../../src/components/FormInfo';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { CameraCapture } from '../../src/components/CameraCapture';
-import { deleteOwnedDraftPhoto, persistSelectedPhoto } from '../../src/services/photoService';
+import { deleteOwnedPhoto, persistSelectedPhoto } from '../../src/services/photoService';
 import { LocationCapture } from '../../src/components/LocationCapture';
 import { useSightingForm } from '../../src/hooks/useSightingForm';
 import { SightingsRepository } from '../../src/repositories/SightingsRepository';
@@ -19,6 +20,7 @@ import { useWeatherForLocation } from '../../src/hooks/useWeatherForLocation';
 import type { LocationCaptureResult } from '../../src/hooks/useLocationCapture';
 import { WeatherStatus } from '../../src/components/WeatherStatus';
 import { createSightingInput } from '../../src/utils/createSightingInput';
+import { requiresMediaLibraryPermission } from '../../src/utils/mediaPermissions';
 import {
   formatDraftDate,
   formatDraftDateForDisplay,
@@ -26,40 +28,140 @@ import {
   parseDraftDateTime,
 } from '../../src/domain/sightingDraft';
 import { BIRD_NAME_MAX_LENGTH, sanitizeBirdName } from '../../src/utils/validateSightingDraft';
+import { calculateRequirementScrollOffset } from '../../src/utils/requirementFocus';
 
 const inputClassName = 'min-h-14 rounded-2xl border border-field-line bg-field-white px-4 text-base text-field-ink';
 const inputErrorClassName = 'border-red-700';
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 type PickerMode = 'date' | 'time';
+type LayoutBox = { y: number; height: number };
+type FocusRequest = { photo: boolean; location: boolean; token: number };
 
 export default function NewSightingScreen() {
   const { draft, errors, setField, touchField, validateForSave } = useSightingForm();
+  const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraPermissionError, setCameraPermissionError] = useState<string | null>(null);
+  const [cameraPermissionBlocked, setCameraPermissionBlocked] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
   const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [galleryPermissionBlocked, setGalleryPermissionBlocked] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const saveInFlightRef = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const photoLayoutRef = useRef<LayoutBox | null>(null);
+  const locationLayoutRef = useRef<LayoutBox | null>(null);
+  const viewportHeightRef = useRef(0);
+  const contentHeightRef = useRef(0);
+  const focusTokenRef = useRef(0);
   const { clearWeather, getWeatherForSave, loadWeather, status: weatherStatus, weather } = useWeatherForLocation();
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void getCameraPermission().then((permission) => {
+          if (permission.granted) {
+            setCameraPermissionBlocked(false);
+            setCameraPermissionError(null);
+          }
+        });
+      }
+    });
+    return () => subscription.remove();
+  }, [getCameraPermission]);
+  const focusMissingRequirements = useCallback(() => {
+    const request = focusRequest;
+    const viewportHeight = viewportHeightRef.current;
+    if (!request || viewportHeight <= 0) return;
+
+    const regions = [
+      request.photo ? photoLayoutRef.current : null,
+      request.location ? locationLayoutRef.current : null,
+    ].filter((region): region is LayoutBox => region !== null);
+    if (regions.length !== (request.photo ? 1 : 0) + (request.location ? 1 : 0)) return;
+
+    const offset = calculateRequirementScrollOffset(regions, viewportHeight, contentHeightRef.current);
+    if (offset !== null) scrollRef.current?.scrollTo({ y: offset, animated: true });
+  }, [focusRequest]);
+
+  function handleRequiredLayout(target: 'photo' | 'location', event: LayoutChangeEvent) {
+    const box = { y: event.nativeEvent.layout.y, height: event.nativeEvent.layout.height };
+    if (target === 'photo') photoLayoutRef.current = box;
+    else locationLayoutRef.current = box;
+    focusMissingRequirements();
+  }
+
+  function requestMissingRequirementFocus(validationErrors: Record<string, string>) {
+    const photo = Boolean(validationErrors.photo);
+    const location = Boolean(validationErrors.location);
+    if (!photo && !location) return;
+    focusTokenRef.current += 1;
+    setFocusRequest({ photo, location, token: focusTokenRef.current });
+  }
+
+  useEffect(() => {
+    focusMissingRequirements();
+  }, [focusMissingRequirements]);
+
+  async function handleOpenCamera() {
+    setCameraPermissionError(null);
+    try {
+      const currentPermission = cameraPermission ?? await getCameraPermission();
+      if (currentPermission.granted) {
+        setCameraPermissionBlocked(false);
+        setCameraOpen(true);
+        return;
+      }
+      if (!currentPermission.canAskAgain) {
+        setCameraPermissionBlocked(true);
+        setCameraPermissionError('Sin permiso de cámara no puedes tomar una fotografía del avistamiento. Puedes elegir una imagen de galería.');
+        return;
+      }
+      const requestedPermission = await requestCameraPermission();
+      if (requestedPermission.granted) {
+        setCameraPermissionBlocked(false);
+        setCameraOpen(true);
+      } else {
+        setCameraPermissionBlocked(!requestedPermission.canAskAgain);
+        setCameraPermissionError('Sin permiso de cámara no puedes tomar una fotografía del avistamiento. Puedes elegir una imagen de galería.');
+      }
+    } catch {
+      setCameraPermissionError('No se pudo solicitar el permiso de cámara. Puedes elegir una imagen de galería.');
+    }
+  }
 
   async function handleAcceptedPhoto(sourceUri: string) {
     const persistentUri = await persistSelectedPhoto(sourceUri);
     const replacedUri = draft.photoUri;
     setField('photoUri', persistentUri);
     setGalleryError(null);
+    setCameraPermissionError(null);
     setCameraOpen(false);
-    if (replacedUri) await deleteOwnedDraftPhoto(replacedUri);
+    if (replacedUri) await deleteOwnedPhoto(replacedUri);
   }
 
   async function handlePickFromGallery() {
     setGalleryError(null);
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        setGalleryError('Necesitamos permiso de galería para seleccionar una imagen. Puedes usar la cámara igualmente.');
-        return;
+      if (requiresMediaLibraryPermission(Platform.OS)) {
+        let permission = await ImagePicker.getMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          if (!permission.canAskAgain) {
+            setGalleryPermissionBlocked(true);
+            setGalleryError('Sin permiso de galería no puedes seleccionar una imagen. La cámara sigue disponible.');
+            return;
+          }
+          permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) {
+            setGalleryPermissionBlocked(!permission.canAskAgain);
+            setGalleryError('Sin permiso de galería no puedes seleccionar una imagen. La cámara sigue disponible.');
+            return;
+          }
+        }
       }
 
+      setGalleryPermissionBlocked(false);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
@@ -83,7 +185,7 @@ export default function NewSightingScreen() {
     const photoUri = draft.photoUri;
     setField('photoUri', null);
     setGalleryError(null);
-    if (photoUri) await deleteOwnedDraftPhoto(photoUri);
+    if (photoUri) await deleteOwnedPhoto(photoUri);
   }
 
   function applyPickerValue(mode: PickerMode, selectedDate: Date) {
@@ -133,6 +235,7 @@ export default function NewSightingScreen() {
     setSaveError(null);
     const validationErrors = validateForSave();
     if (Object.keys(validationErrors).length > 0) {
+      requestMissingRequirementFocus(validationErrors);
       saveInFlightRef.current = false;
       setSaveStatus('idle');
       return;
@@ -167,7 +270,17 @@ export default function NewSightingScreen() {
   const selectedDate = parseDraftDateTime(draft) ?? new Date();
 
   return (
-    <AppScreen>
+    <AppScreen
+      onContentSizeChange={(_width, height) => {
+        contentHeightRef.current = height;
+        focusMissingRequirements();
+      }}
+      onScrollLayout={(event) => {
+        viewportHeightRef.current = event.nativeEvent.layout.height;
+        focusMissingRequirements();
+      }}
+      scrollRef={scrollRef}
+    >
       <AppHeader
         eyebrow="Nueva ficha / Registro"
         title="Nuevo avistamiento"
@@ -177,53 +290,68 @@ export default function NewSightingScreen() {
 
       <SectionHeader title="Datos de observación" detail="Borrador" />
 
-      <FormField label="Foto" labelId="photo-label" required error={errors.photo}>
-        {draft.photoUri ? (
-          <View className="rounded-3xl bg-field-sage p-4">
-            <Image
-              accessibilityLabel="Fotografía persistente del avistamiento"
-              className="h-56 w-full rounded-2xl bg-field-pine"
-              resizeMode="contain"
-              source={{ uri: draft.photoUri }}
-            />
-            <Text className="mt-3 text-sm font-bold text-field-pine">Foto lista para el registro</Text>
-            <View className="mt-3 gap-3">
-              <PrimaryButton label="Repetir foto" onPress={() => setCameraOpen(true)} />
-              <Pressable accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={() => void handleRemovePhoto()}>
-                <Text className="font-bold text-field-pine">Eliminar foto</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          !cameraOpen ? (
-            <View className="gap-3">
-              <FormInfo message="Captura una foto o añade una desde tu galería para el registro." />
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <PrimaryButton label="Tomar foto" onPress={() => setCameraOpen(true)} />
-                </View>
-                <View className="flex-1">
-                  <Pressable accessibilityLabel="Elegir de galería" accessibilityRole="button" className="min-h-14 flex-row items-center justify-between rounded-2xl border border-field-pine bg-field-white px-5 py-4" onPress={() => void handlePickFromGallery()}>
-                    <Text className="text-base font-bold text-field-pine">Elegir de galería</Text>
-                    <Text className="text-2xl text-field-pine">→</Text>
-                  </Pressable>
-                </View>
+      <FormField
+        highlightToken={focusRequest?.photo ? focusRequest.token : undefined}
+        label="Foto"
+        labelId="photo-label"
+        onLayout={(event) => handleRequiredLayout('photo', event)}
+        required
+        error={errors.photo}
+      >
+        <View className={`rounded-3xl p-4 ${draft.photoUri ? 'bg-field-sage' : 'bg-field-sky'}`}>
+          {draft.photoUri ? (
+            <>
+              <Image
+                accessibilityLabel="Fotografía persistente del avistamiento"
+                className="h-56 w-full rounded-2xl bg-field-pine"
+                resizeMode="contain"
+                source={{ uri: draft.photoUri }}
+              />
+              <Text className="mt-3 text-sm font-bold text-field-pine">Foto lista para el registro</Text>
+              <View className="mt-3 gap-3">
+                <PrimaryButton label="Repetir foto" onPress={() => void handleOpenCamera()} />
+                <Pressable accessibilityLabel="Elegir otra imagen de galería" accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={() => void handlePickFromGallery()}>
+                  <Text className="font-bold text-field-pine">Elegir otra de galería</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={() => void handleRemovePhoto()}>
+                  <Text className="font-bold text-field-pine">Eliminar foto</Text>
+                </Pressable>
               </View>
-            </View>
-          ) : null
-        )}
-        {cameraOpen ? <CameraCapture onAccepted={handleAcceptedPhoto} onCancel={() => setCameraOpen(false)} /> : null}
-        {galleryError ? (
-          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">
-            {galleryError}
-          </Text>
-        ) : null}
+            </>
+          ) : cameraOpen ? (
+            <CameraCapture onAccepted={handleAcceptedPhoto} onCancel={() => setCameraOpen(false)} />
+          ) : (
+            <>
+              <Text className="text-sm leading-5 text-field-pine">Captura una foto o añade una desde tu galería para el registro.</Text>
+              {cameraPermissionError ? (
+                <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">{cameraPermissionError}</Text>
+              ) : null}
+              {galleryError ? (
+                <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">{galleryError}</Text>
+              ) : null}
+              <View className="mt-4 gap-3">
+                <PrimaryButton accessibilityHint="Solicita permiso y abre la cámara" label="Tomar foto" onPress={() => void handleOpenCamera()} />
+                <Pressable accessibilityLabel="Elegir de galería" accessibilityRole="button" className="min-h-14 flex-row items-center justify-between rounded-2xl border border-field-pine bg-field-white px-5 py-4" onPress={() => void handlePickFromGallery()}>
+                  <Text className="text-base font-bold text-field-pine">Elegir de galería</Text>
+                  <Text className="text-2xl text-field-pine">→</Text>
+                </Pressable>
+                {cameraPermissionBlocked || galleryPermissionBlocked ? (
+                  <Pressable accessibilityHint="Abre los ajustes de permisos del dispositivo" accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-field-pine px-4 py-3" onPress={() => Linking.openSettings().catch(() => undefined)}>
+                    <Text className="font-bold text-field-pine">Abrir ajustes</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </>
+          )}
+        </View>
       </FormField>
 
       <LocationCapture
+        highlightToken={focusRequest?.location ? focusRequest.token : undefined}
         latitude={draft.latitude}
         longitude={draft.longitude}
         locationLabel={draft.locationLabel}
+        onLayout={(event) => handleRequiredLayout('location', event)}
         validationError={errors.location}
         onLocated={handleLocated}
         onClear={handleRemoveLocation}

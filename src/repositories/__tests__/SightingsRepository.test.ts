@@ -37,7 +37,7 @@ const completeRow = {
 
 function createTestDatabase(firstRow: unknown = completeRow, rows: unknown[] = []) {
   const methods = {
-    runAsync: jest.fn().mockResolvedValue(undefined),
+    runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
     getFirstAsync: jest.fn().mockResolvedValue(firstRow),
     getAllAsync: jest.fn().mockResolvedValue(rows),
   };
@@ -117,5 +117,12 @@ describe('SightingsRepository injected database boundary', () => {
 
     await expect(repository.findAll('name')).resolves.toMatchObject([{ birdName: 'Chucao', quantity: 1 }]);
     expect(methods.getAllAsync).toHaveBeenCalledWith(expect.any(String));
+  });
+  it('reports whether a persisted sighting was deleted', async () => {
+    const { database, methods } = createTestDatabase();
+    const repository = new SightingsRepository(async () => database);
+
+    await expect(repository.deleteById('sighting-1')).resolves.toBe(true);
+    expect(methods.runAsync).toHaveBeenCalledWith('DELETE FROM sightings WHERE id = ?', 'sighting-1');
   });
 });

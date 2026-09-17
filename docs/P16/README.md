@@ -25,3 +25,14 @@
 - `npx --yes yarn test` — PASS; 14 suites, 126 tests
 
 Focused timestamp tests use deterministic local `Date` values. Native picker, permission, camera, gallery, and restart persistence behavior remains manual-only.
+
+## P16.1 implementation
+
+- Camera permission is checked/requested from `Tomar foto` before mounting the camera. Denial preserves camera and gallery as independent actions; blocked permissions expose `Abrir ajustes`.
+- SDK 57 image-only Android gallery flow launches `expo-image-picker` directly through Android Photo Picker. The installed `expo-image-picker` Android contract uses `PickVisualMedia`, so no broad storage/media permission is requested on Android. iOS still checks/requests media-library permission because that platform/API requires it.
+- Photo now uses one rounded informational container with both actions inside. Camera-denial copy now acknowledges gallery selection.
+- Save validation records measured Photo/Location layouts, centers the missing region with a clamped `ScrollView.scrollTo`, and runs a short reusable scale pulse on each missing block.
+- `SightingsRepository.deleteById` plus `deleteSighting` is the shared delete path for list and detail. Successful record deletion best-effort deletes only app-owned `document/sightings/photos/photo-*` files; external/gallery URIs are ignored. File cleanup failure does not corrupt the SQLite record.
+- Card and detail deletes share the same confirmation modal. Detail returns to the list only after persistence deletion succeeds.
+
+No EAS, Gradle, or Android build was run.

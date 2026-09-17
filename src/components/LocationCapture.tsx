@@ -1,4 +1,5 @@
 import { Linking, Pressable, Text, View } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 
 import { useLocationCapture, type LocationCaptureResult } from '../hooks/useLocationCapture';
 import {
@@ -7,7 +8,6 @@ import {
   type LocationCoordinates,
 } from '../utils/locationHelpers';
 import { FormField } from './FormField';
-import { FormInfo } from './FormInfo';
 import { PrimaryButton } from './PrimaryButton';
 
 type LocationCaptureProps = {
@@ -15,11 +15,13 @@ type LocationCaptureProps = {
   longitude: number | null;
   locationLabel: string | null;
   validationError?: string;
+  highlightToken?: number;
+  onLayout?: (event: LayoutChangeEvent) => void;
   onLocated: (result: LocationCaptureResult) => void;
   onClear: () => void;
 };
 
-export function LocationCapture({ latitude, longitude, locationLabel, validationError, onLocated, onClear }: LocationCaptureProps) {
+export function LocationCapture({ latitude, longitude, locationLabel, validationError, highlightToken, onLayout, onLocated, onClear }: LocationCaptureProps) {
   const { acquireLocation, error, permissionBlocked, status } = useLocationCapture(onLocated);
   const hasLocation =
     typeof latitude === 'number' &&
@@ -36,7 +38,7 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
       : 'Obtener ubicación';
 
   return (
-    <FormField label="Ubicación" labelId="location-label" required error={validationError}>
+    <FormField highlightToken={highlightToken} label="Ubicación" labelId="location-label" onLayout={onLayout} required error={validationError}>
       <View className={`rounded-3xl p-4 ${hasLocation ? 'bg-field-sage' : 'bg-field-sky'}`}>
         {hasLocation && coordinates ? (
           <>
@@ -46,7 +48,7 @@ export function LocationCapture({ latitude, longitude, locationLabel, validation
             </Text>
           </>
         ) : (
-          <FormInfo message="Necesitamos tu ubicación para registrar dónde observaste el ave." />
+          <Text className="text-sm leading-5 text-field-pine">Necesitamos tu ubicación para registrar dónde observaste el ave.</Text>
         )}
         {error ? (
           <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-3 text-sm leading-5 text-red-800">

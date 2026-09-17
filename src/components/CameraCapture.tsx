@@ -157,7 +157,7 @@ export function CameraCapture({ onAccepted, onCancel }: CameraCaptureProps) {
       <View className="mt-3 rounded-3xl bg-field-sage p-5">
         <Text className="text-base font-bold text-field-pine">Se necesita acceso a la cámara</Text>
         <Text className="mt-2 text-sm leading-5 text-field-pine">
-          AvistAves necesita la cámara para tomar la fotografía obligatoria del avistamiento. No se usa una galería.
+          AvistAves necesita la cámara para tomar la fotografía obligatoria del avistamiento. Puedes elegir una imagen de galería si no deseas usar la cámara.
         </Text>
         {error ? (
           <Text accessibilityLiveRegion="polite" accessibilityRole="alert" className="mt-2 text-sm leading-5 text-red-800">

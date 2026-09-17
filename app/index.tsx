@@ -4,14 +4,15 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 
 import { AppHeader } from '../src/components/AppHeader';
 import { AppScreen } from '../src/components/AppScreen';
+import { ConfirmationModal } from '../src/components/ConfirmationModal';
 import { EmptyState } from '../src/components/EmptyState';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { SectionHeader } from '../src/components/SectionHeader';
 import { SightingCard } from '../src/components/SightingCard';
 import { useSightingsList } from '../src/hooks/useSightingsList';
 import type { Sighting, SightingsSort } from '../src/domain/sightings';
+import { deleteSighting } from '../src/services/sightingService';
 import { SIGHTINGS_ORDER_OPTIONS, sightingsOrderLabel } from '../src/utils/sightingsList';
-
 
 function LoadingState() {
   return (
@@ -38,9 +39,11 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
     </View>
   );
 }
-
 export default function SightingsListScreen() {
   const [sort, setSort] = useState<SightingsSort>({ field: 'date', direction: 'desc' });
+  const [pendingDelete, setPendingDelete] = useState<Sighting | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { error, load, sightings, status } = useSightingsList(sort);
   const openRegistration = useCallback(() => router.push('/sightings/new'), []);
   const openDetail = useCallback((id: string) => {
@@ -48,11 +51,31 @@ export default function SightingsListScreen() {
     if (!normalizedId) return;
     router.push(`/sightings/${encodeURIComponent(normalizedId)}`);
   }, []);
+  const requestDelete = useCallback((sighting: Sighting) => {
+    setDeleteError(null);
+    setPendingDelete(sighting);
+  }, []);
+
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      if (!await deleteSighting(pendingDelete.id)) throw new Error('Sighting not found');
+      setPendingDelete(null);
+      await load();
+    } catch {
+      setDeleteError('No se pudo eliminar el avistamiento. Inténtalo nuevamente.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const renderItem = useCallback(
     ({ item }: { item: Sighting }) => (
-      <SightingCard onPress={item.id.trim() ? () => openDetail(item.id) : undefined} sighting={item} />
+      <SightingCard onDelete={() => requestDelete(item)} onPress={item.id.trim() ? () => openDetail(item.id) : undefined} sighting={item} />
     ),
-    [openDetail],
+    [openDetail, requestDelete],
   );
 
   function renderEmptyState() {
@@ -127,6 +150,20 @@ export default function SightingsListScreen() {
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
+      />
+      <ConfirmationModal
+        body="Esta acción eliminará el registro de forma permanente y no se puede deshacer."
+        busy={deleting}
+        error={deleteError}
+        onCancel={() => {
+          if (!deleting) {
+            setDeleteError(null);
+            setPendingDelete(null);
+          }
+        }}
+        onConfirm={() => void confirmDelete()}
+        title="¿Eliminar avistamiento?"
+        visible={pendingDelete !== null}
       />
     </AppScreen>
   );

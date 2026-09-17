@@ -34,13 +34,13 @@ export async function persistSelectedPhoto(sourceUri: string): Promise<string> {
   }
 }
 
-export async function deleteOwnedDraftPhoto(uri: string): Promise<void> {
+export async function deleteOwnedPhoto(uri: string): Promise<void> {
   if (!isOwnedPhotoUri(uri)) return;
 
   try {
     const file = new File(uri);
     if (file.exists) file.delete();
   } catch {
-    // Replacement must remain successful when old-file cleanup is unavailable.
+    // Record deletion remains successful when file cleanup is unavailable.
   }
 }

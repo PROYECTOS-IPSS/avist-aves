@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
+import type { GestureResponderEvent } from 'react-native';
 
 import type { Sighting } from '../domain/sightings';
 import { formatObservedAt, formatQuantity, formatTemperature } from '../utils/formatSighting';
@@ -7,12 +8,18 @@ import { formatObservedAt, formatQuantity, formatTemperature } from '../utils/fo
 type SightingCardProps = {
   sighting: Sighting;
   onPress?: () => void;
+  onDelete?: () => void;
 };
 
-export function SightingCard({ sighting, onPress }: SightingCardProps) {
+export function SightingCard({ sighting, onPress, onDelete }: SightingCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const location = sighting.locationLabel || 'Ubicación no disponible';
   const weather = sighting.weatherDescription || 'Condición no disponible';
+
+  function handleDelete(event: GestureResponderEvent) {
+    event.stopPropagation();
+    onDelete?.();
+  }
 
   return (
     <Pressable
@@ -20,9 +27,9 @@ export function SightingCard({ sighting, onPress }: SightingCardProps) {
       accessibilityHint={onPress ? 'Abre el detalle del avistamiento' : undefined}
       accessibilityLabel={`Avistamiento de ${sighting.birdName}. ${formatObservedAt(sighting.observedAt)}. ${location}. ${formatTemperature(sighting.temperature)}. ${weather}. ${formatQuantity(sighting.quantity)}.`}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityState={{ disabled: !onPress }}
-      className="mb-3 flex-row rounded-3xl border border-field-line bg-field-white p-4 active:bg-field-sage"
-      disabled={!onPress}
+      accessibilityState={{ disabled: !onPress && !onDelete }}
+      className="relative mb-3 flex-row rounded-3xl border border-field-line bg-field-white p-4 active:bg-field-sage"
+      disabled={!onPress && !onDelete}
       onPress={onPress}
     >
       {imageFailed ? (
@@ -38,7 +45,7 @@ export function SightingCard({ sighting, onPress }: SightingCardProps) {
           source={{ uri: sighting.photoUri }}
         />
       )}
-      <View className="ml-4 flex-1 justify-center">
+      <View className="ml-4 flex-1 justify-center pr-8">
         <Text className="text-lg font-bold text-field-ink" ellipsizeMode="tail" numberOfLines={2}>
           {sighting.birdName}
         </Text>
@@ -52,6 +59,17 @@ export function SightingCard({ sighting, onPress }: SightingCardProps) {
           <Text className="text-xs text-field-muted">{formatQuantity(sighting.quantity)}</Text>
         </View>
       </View>
+      {onDelete ? (
+        <Pressable
+          accessibilityLabel={`Eliminar avistamiento de ${sighting.birdName}`}
+          accessibilityRole="button"
+          className="absolute right-3 top-3 h-11 w-11 items-center justify-center rounded-full border border-field-line bg-field-white active:bg-field-sage"
+          hitSlop={4}
+          onPress={handleDelete}
+        >
+          <Text className="text-xl font-bold text-field-moss">×</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }

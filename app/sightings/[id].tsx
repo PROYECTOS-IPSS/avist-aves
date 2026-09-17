@@ -1,17 +1,18 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
 
 import { AppHeader } from '../../src/components/AppHeader';
 import { AppScreen } from '../../src/components/AppScreen';
+import { ConfirmationModal } from '../../src/components/ConfirmationModal';
 import { EmptyState } from '../../src/components/EmptyState';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { useSightingDetail } from '../../src/hooks/useSightingDetail';
+import { deleteSighting } from '../../src/services/sightingService';
 import { formatCoordinateForDisplay } from '../../src/utils/locationHelpers';
 import { formatObservedAt, formatQuantity, formatTemperature } from '../../src/utils/formatSighting';
 import { normalizeRouteId } from '../../src/utils/routeParams';
 import type { Sighting } from '../../src/domain/sightings';
-
 function DetailLoading() {
   return (
     <View accessibilityLiveRegion="polite" className="items-center rounded-3xl border border-field-line bg-field-white p-8">
@@ -37,8 +38,7 @@ function DetailError({ message, onRetry }: DetailErrorProps) {
     </View>
   );
 }
-
-function SightingDetailContent({ sighting }: { sighting: Sighting }) {
+function SightingDetailContent({ sighting, onDelete }: { sighting: Sighting; onDelete: () => void }) {
   const [imageFailed, setImageFailed] = useState(false);
   const notes = sighting.notes?.trim();
   const locationLabel = sighting.locationLabel?.trim() || 'Ubicación registrada';
@@ -103,6 +103,12 @@ function SightingDetailContent({ sighting }: { sighting: Sighting }) {
           </>
         ) : null}
       </View>
+
+      <View className="mt-5">
+        <Pressable accessibilityLabel={`Eliminar avistamiento de ${sighting.birdName}`} accessibilityRole="button" className="min-h-12 items-center justify-center rounded-2xl border border-red-800 px-4 py-3" onPress={onDelete}>
+          <Text className="font-bold text-red-800">Eliminar avistamiento</Text>
+        </Pressable>
+      </View>
     </>
   );
 }
@@ -111,6 +117,23 @@ export default function SightingDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = normalizeRouteId(params.id);
   const { error, load, sighting, status } = useSightingDetail(id);
+  const [deleteRequested, setDeleteRequested] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    if (!id || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      if (!await deleteSighting(id)) throw new Error('Sighting not found');
+      router.replace('/');
+    } catch {
+      setDeleteError('No se pudo eliminar el avistamiento. Inténtalo nuevamente.');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <AppScreen>
@@ -131,7 +154,21 @@ export default function SightingDetailScreen() {
           title="Avistamiento no encontrado"
         />
       ) : null}
-      {status === 'success' && sighting ? <SightingDetailContent sighting={sighting} /> : null}
+      {status === 'success' && sighting ? <SightingDetailContent onDelete={() => { setDeleteError(null); setDeleteRequested(true); }} sighting={sighting} /> : null}
+      <ConfirmationModal
+        body="Esta acción eliminará el registro de forma permanente y no se puede deshacer."
+        busy={deleting}
+        error={deleteError}
+        onCancel={() => {
+          if (!deleting) {
+            setDeleteError(null);
+            setDeleteRequested(false);
+          }
+        }}
+        onConfirm={() => void confirmDelete()}
+        title="¿Eliminar avistamiento?"
+        visible={deleteRequested}
+      />
     </AppScreen>
   );
 }
