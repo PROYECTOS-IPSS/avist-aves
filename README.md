@@ -98,24 +98,24 @@ El enfoque local-first permite consultar la lista y los detalles guardados sin c
 
 ## Stack tecnológico
 
-| Área | Tecnología | Uso |
-|---|---|---|
-| Runtime móvil | React Native `0.86.3` | Interfaz y APIs nativas |
-| Framework | Expo SDK `57` | Toolchain, configuración y módulos nativos |
-| UI | React `19.2.3` | Componentes y estado |
-| Lenguaje | TypeScript `6` con modo estricto | Tipado estático |
-| Navegación | Expo Router `57` | Rutas basadas en archivos |
-| Base de datos | `expo-sqlite` | Persistencia relacional local |
-| Archivos | `expo-file-system` | Fotografías privadas |
-| Cámara | `expo-camera` | Captura de fotografías |
-| Galería | `expo-image-picker` | Selección de imágenes |
-| Ubicación | `expo-location` | Permiso, GPS y geocodificación inversa |
-| Fecha y hora | `@react-native-community/datetimepicker` | Selectores nativos |
-| Estilos | NativeWind `4` y Tailwind CSS `3` | Sistema visual |
-| Iconos | `@expo/vector-icons` | Iconografía nativa |
-| Pruebas | Jest `29` y `jest-expo` | Pruebas unitarias |
-| Calidad | ESLint `9` y TypeScript | Lint y verificación de tipos |
-| Build | EAS CLI `24.3.0` | Builds Android locales con credenciales EAS |
+| Área          | Tecnología                               | Uso                                         |
+| ------------- | ---------------------------------------- | ------------------------------------------- |
+| Runtime móvil | React Native `0.86.3`                    | Interfaz y APIs nativas                     |
+| Framework     | Expo SDK `57`                            | Toolchain, configuración y módulos nativos  |
+| UI            | React `19.2.3`                           | Componentes y estado                        |
+| Lenguaje      | TypeScript `6` con modo estricto         | Tipado estático                             |
+| Navegación    | Expo Router `57`                         | Rutas basadas en archivos                   |
+| Base de datos | `expo-sqlite`                            | Persistencia relacional local               |
+| Archivos      | `expo-file-system`                       | Fotografías privadas                        |
+| Cámara        | `expo-camera`                            | Captura de fotografías                      |
+| Galería       | `expo-image-picker`                      | Selección de imágenes                       |
+| Ubicación     | `expo-location`                          | Permiso, GPS y geocodificación inversa      |
+| Fecha y hora  | `@react-native-community/datetimepicker` | Selectores nativos                          |
+| Estilos       | NativeWind `4` y Tailwind CSS `3`        | Sistema visual                              |
+| Iconos        | `@expo/vector-icons`                     | Iconografía nativa                          |
+| Pruebas       | Jest `29` y `jest-expo`                  | Pruebas unitarias                           |
+| Calidad       | ESLint `9` y TypeScript                  | Lint y verificación de tipos                |
+| Build         | EAS CLI `24.3.0`                         | Builds Android locales con credenciales EAS |
 
 Las versiones exactas y sus rangos son autoridad de `package.json` y `yarn.lock`.
 
@@ -152,16 +152,16 @@ flowchart TD
 
 ### Responsabilidades
 
-| Capa | Responsabilidad |
-|---|---|
-| `app/` | Composición de pantallas, navegación y estados visuales |
-| `src/components/` | Componentes reutilizables de presentación |
-| `src/hooks/` | Estado y orquestación de lista, detalle, formulario, ubicación y clima |
-| `src/services/` | Adaptadores para clima, ubicación, fotos y eliminación coordinada |
-| `src/domain/` | Entidades y validación independiente de UI |
-| `src/repositories/` | Contrato CRUD y consultas SQL parametrizadas |
-| `src/db/` | Apertura, migración y acceso a SQLite |
-| `src/utils/` | Transformaciones puras: fechas, rutas, ordenamiento y formato |
+| Capa                | Responsabilidad                                                        |
+| ------------------- | ---------------------------------------------------------------------- |
+| `app/`              | Composición de pantallas, navegación y estados visuales                |
+| `src/components/`   | Componentes reutilizables de presentación                              |
+| `src/hooks/`        | Estado y orquestación de lista, detalle, formulario, ubicación y clima |
+| `src/services/`     | Adaptadores para clima, ubicación, fotos y eliminación coordinada      |
+| `src/domain/`       | Entidades y validación independiente de UI                             |
+| `src/repositories/` | Contrato CRUD y consultas SQL parametrizadas                           |
+| `src/db/`           | Apertura, migración y acceso a SQLite                                  |
+| `src/utils/`        | Transformaciones puras: fechas, rutas, ordenamiento y formato          |
 
 La UI no ejecuta SQL. El repositorio tampoco conoce componentes, navegación ni permisos.
 
@@ -200,11 +200,11 @@ Los tipos están junto al módulo que los usa; no existe una capa global de tipo
 
 Expo Router deriva las rutas del sistema de archivos:
 
-| Archivo | Ruta | Propósito |
-|---|---|---|
-| `app/index.tsx` | `/` | Lista principal |
-| `app/sightings/new.tsx` | `/sightings/new` | Nuevo registro |
-| `app/sightings/[id].tsx` | `/sightings/:id` | Detalle por ID |
+| Archivo                  | Ruta             | Propósito       |
+| ------------------------ | ---------------- | --------------- |
+| `app/index.tsx`          | `/`              | Lista principal |
+| `app/sightings/new.tsx`  | `/sightings/new` | Nuevo registro  |
+| `app/sightings/[id].tsx` | `/sightings/:id` | Detalle por ID  |
 
 ```mermaid
 flowchart LR
@@ -226,23 +226,23 @@ flowchart LR
 
 ### Entidad `Sighting`
 
-| Campo | Tipo | Regla |
-|---|---|---|
-| `id` | `string` | UUID local |
-| `birdName` | `string` | Obligatorio, sanitizado, máximo 50 caracteres |
-| `photoUri` | `string` | URI obligatoria de archivo |
-| `lat` | `number` | Entre -90 y 90 |
-| `lon` | `number` | Entre -180 y 180 |
-| `locationLabel` | `string \| null` | Etiqueta opcional |
-| `observedAt` | `string` | Fecha ISO válida, no futura |
-| `quantity` | `number` | Entero mayor o igual a 1 |
-| `notes` | `string \| null` | Texto opcional |
-| `temperature` | `number \| null` | Instantánea meteorológica opcional |
-| `humidity` | `number \| null` | Instantánea meteorológica opcional |
-| `weatherCode` | `number \| null` | Código WMO opcional |
-| `weatherDescription` | `string \| null` | Descripción en español opcional |
-| `createdAt` | `string` | Fecha de creación |
-| `updatedAt` | `string` | Fecha de última actualización |
+| Campo                | Tipo             | Regla                                         |
+| -------------------- | ---------------- | --------------------------------------------- |
+| `id`                 | `string`         | UUID local                                    |
+| `birdName`           | `string`         | Obligatorio, sanitizado, máximo 50 caracteres |
+| `photoUri`           | `string`         | URI obligatoria de archivo                    |
+| `lat`                | `number`         | Entre -90 y 90                                |
+| `lon`                | `number`         | Entre -180 y 180                              |
+| `locationLabel`      | `string \| null` | Etiqueta opcional                             |
+| `observedAt`         | `string`         | Fecha ISO válida, no futura                   |
+| `quantity`           | `number`         | Entero mayor o igual a 1                      |
+| `notes`              | `string \| null` | Texto opcional                                |
+| `temperature`        | `number \| null` | Instantánea meteorológica opcional            |
+| `humidity`           | `number \| null` | Instantánea meteorológica opcional            |
+| `weatherCode`        | `number \| null` | Código WMO opcional                           |
+| `weatherDescription` | `string \| null` | Descripción en español opcional               |
+| `createdAt`          | `string`         | Fecha de creación                             |
+| `updatedAt`          | `string`         | Fecha de última actualización                 |
 
 La velocidad del viento puede mostrarse durante el registro, pero no forma parte del modelo persistido.
 
@@ -341,12 +341,12 @@ El clima es opcional. Un fallo de red no impide guardar: los campos meteorológi
 
 ## Permisos
 
-| Capacidad | Momento de solicitud | Denegación recuperable | Bloqueo persistente |
-|---|---|---|---|
-| Cámara | Al tocar **Tomar foto** | Explicación y nuevo intento | Acción **Abrir ajustes** |
-| Galería en iOS | Al tocar **Galería** | Explicación y nuevo intento | Acción **Abrir ajustes** |
-| Galería en Android | Al abrir selector del sistema | Gestionado por selector del sistema | No se solicita permiso amplio |
-| Ubicación foreground | Al tocar **Obtener ubicación** | Explicación y nuevo intento | Acción **Abrir ajustes** |
+| Capacidad            | Momento de solicitud           | Denegación recuperable              | Bloqueo persistente           |
+| -------------------- | ------------------------------ | ----------------------------------- | ----------------------------- |
+| Cámara               | Al tocar **Tomar foto**        | Explicación y nuevo intento         | Acción **Abrir ajustes**      |
+| Galería en iOS       | Al tocar **Galería**           | Explicación y nuevo intento         | Acción **Abrir ajustes**      |
+| Galería en Android   | Al abrir selector del sistema  | Gestionado por selector del sistema | No se solicita permiso amplio |
+| Ubicación foreground | Al tocar **Obtener ubicación** | Explicación y nuevo intento         | Acción **Abrir ajustes**      |
 
 La aplicación reevalúa permisos al volver desde ajustes. No solicita ubicación en segundo plano, micrófono ni acceso amplio al almacenamiento.
 
@@ -383,11 +383,11 @@ La interfaz no implementa todavía una política específica para **reducir movi
 
 La lista carga inicialmente por fecha de observación, más reciente primero. La UI ordena una copia del arreglo y nunca muta el resultado original.
 
-| Control | Primer toque | Toques posteriores |
-|---|---|---|
-| Fecha | Más reciente primero | Mantiene descendente |
-| Nombre | A-Z | Alterna A-Z / Z-A |
-| Cantidad | Mayor a menor | Alterna descendente / ascendente |
+| Control  | Primer toque         | Toques posteriores               |
+| -------- | -------------------- | -------------------------------- |
+| Fecha    | Más reciente primero | Mantiene descendente             |
+| Nombre   | A-Z                  | Alterna A-Z / Z-A                |
+| Cantidad | Mayor a menor        | Alterna descendente / ascendente |
 
 La comparación de nombres usa locale español con sensibilidad base. La versión actual ofrece ordenamiento; no ofrece búsqueda textual ni filtrado.
 
@@ -440,19 +440,19 @@ Componentes como encabezado, pantalla, campo y modal se componen en cada ruta. N
 
 ## Decisiones de rendimiento y confiabilidad
 
-| Decisión | Beneficio |
-|---|---|
-| SQLite con índices por fecha y nombre | Lectura local predecible |
-| Fotografías como archivos, no blobs SQLite | Menor presión sobre la base |
-| Consulta Open-Meteo con solo campos actuales necesarios | Menor respuesta de red |
-| Timeout y reintento selectivo | Evita esperas indefinidas y tormentas de retry |
-| Caché exitosa de 10 minutos | Reduce llamadas repetidas cercanas |
-| Deduplicación en vuelo | Evita solicitudes duplicadas |
-| Versionado de solicitudes en el hook | Evita mostrar respuestas obsoletas |
-| Instantánea meteorológica persistida | Lista y detalle no dependen de red |
-| Ordenamiento sobre copia | Conserva fuente inmutable |
-| SQL parametrizado | Evita interpolación de datos |
-| Build local fuera de `/tmp` | Reduce fallos por espacio temporal |
+| Decisión                                                | Beneficio                                      |
+| ------------------------------------------------------- | ---------------------------------------------- |
+| SQLite con índices por fecha y nombre                   | Lectura local predecible                       |
+| Fotografías como archivos, no blobs SQLite              | Menor presión sobre la base                    |
+| Consulta Open-Meteo con solo campos actuales necesarios | Menor respuesta de red                         |
+| Timeout y reintento selectivo                           | Evita esperas indefinidas y tormentas de retry |
+| Caché exitosa de 10 minutos                             | Reduce llamadas repetidas cercanas             |
+| Deduplicación en vuelo                                  | Evita solicitudes duplicadas                   |
+| Versionado de solicitudes en el hook                    | Evita mostrar respuestas obsoletas             |
+| Instantánea meteorológica persistida                    | Lista y detalle no dependen de red             |
+| Ordenamiento sobre copia                                | Conserva fuente inmutable                      |
+| SQL parametrizado                                       | Evita interpolación de datos                   |
+| Build local fuera de `/tmp`                             | Reduce fallos por espacio temporal             |
 
 La solución favorece primitivas del SDK y dependencias ya instaladas; no añade un cliente HTTP, gestor de estado o capa de caché externa.
 
@@ -575,6 +575,10 @@ Reconstruya después de:
 
 Un cambio solo de TypeScript, estilos o recursos procesados por Metro normalmente no requiere reconstrucción nativa.
 
+## 5. Utilizar APK preview
+
+En el repositorio de GitHub se encuentra un .apk correspondiente a la build preview de AvistAves, útil para probar la app sin tener que instalar elementos adicionales.
+
 ## Builds Android
 
 `scripts/eas-local-build.sh` es la entrada reproducible para los dos perfiles:
@@ -586,10 +590,10 @@ yarn build:preview
 
 Equivalencias:
 
-| Script | Perfil EAS | Resultado |
-|---|---|---|
-| `yarn build:dev` | `development` | `build-outputs/development/avistaves-development.apk` |
-| `yarn build:preview` | `preview` | `build-outputs/preview/avistaves-preview.apk` |
+| Script               | Perfil EAS    | Resultado                                             |
+| -------------------- | ------------- | ----------------------------------------------------- |
+| `yarn build:dev`     | `development` | `build-outputs/development/avistaves-development.apk` |
+| `yarn build:preview` | `preview`     | `build-outputs/preview/avistaves-preview.apk`         |
 
 El wrapper:
 
